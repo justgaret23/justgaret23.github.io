@@ -1,0 +1,23 @@
+* {
+
+}
+
+#MainPage{
+    display: flex;
+    flex-direction: row;
+    background-color: #ededed;
+
+}
+body{
+    background-color: #ededed;
+}
+
+#TopNav{
+    text-align: center;
+    width: 100%;
+    background-color: #95A1C3;
+}
+
+#toy{
+    padding-left: 20px;
+}
