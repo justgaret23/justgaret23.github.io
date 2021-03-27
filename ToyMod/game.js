@@ -131,6 +131,7 @@ PS.release = function( x, y, data, options ) {
 
 	if(lineDifferenceX === 0 && lineDifferenceY === 0){
 		PS.debug("Hold on, there's no difference...");
+		PS.audioPlayChannel(yahooID);
 		if(GRID_LENGTH < 32 && GRID_HEIGHT < 32){
 			PS.debug("Both are less than 32");
 			GRID_LENGTH = GRID_LENGTH + 1;
@@ -181,7 +182,6 @@ PS.enter = function( x, y, data, options ) {
 	if(MAKE_LINE){
 		PS.debug("Make line is true!!");
 		PS.color(x,y,0x000000);
-		PS.audioPlayChannel(yahooID);
 	} else {
 
 	}
@@ -237,6 +237,8 @@ PS.exitGrid = function( options ) {
 	"use strict"; // Do not remove this directive!
 
 	// Uncomment the following code line to verify operation:
+	MAKE_LINE = false;
+	PS.statusText("nah can't go out of bounds fam");
 
 	// PS.debug( "PS.exitGrid() called\n" );
 
