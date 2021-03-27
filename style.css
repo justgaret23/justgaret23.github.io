@@ -21,3 +21,8 @@ body{
 #toy{
     padding-left: 20px;
 }
+
+#radThing{
+    display: flex;
+    flex-direction: column;
+}
