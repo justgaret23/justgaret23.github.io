@@ -25,6 +25,7 @@ let initLineY = 0;
 
 //audio
 let yahooID = ""; //variable to save yahoo
+let fallingID = "";
 
 PS.init = function( system, options ) {
 
@@ -34,15 +35,21 @@ PS.init = function( system, options ) {
 	
 	// Set background color to Perlenspiel logo gray
 	
-	PS.gridColor( 0x303030 );
+	PS.gridColor( 0x3b85e5 );
+	PS.borderColor(PS.ALL, PS.ALL, 0xdbd168);
+	PS.color(PS.ALL, PS.ALL, 0x29b800);
 	
 	// Change status line color and text
 
-	PS.statusColor( PS.COLOR_WHITE );
+	PS.statusColor( 0xc3d2de );
 	PS.statusText( "Draw lines and have fun!" );
 
 	let loader = function(data){
 		yahooID = data.channel; //save ID
+	}
+
+	let loader2 = function(data){
+		fallingID = data.channel;
 	}
 
 	//LOAD
@@ -50,7 +57,15 @@ PS.init = function( system, options ) {
 		lock: true,
 		path: "audio/",
 		onLoad: loader //specify loader location
-	})
+	});
+
+	PS.audioLoad("falling", {
+		lock: true,
+		autoplay: true,
+		volume: 0.0001,
+		path: "audio/",
+		onLoad: loader2 //specify loader location
+	});
 
 	
 	// Preload click sound
@@ -80,7 +95,7 @@ PS.touch = function( x, y, data, options ) {
 	MAKE_LINE = true;
 	PS.debug("makeline is all set");
 
-	PS.color(x,y,0x000000);
+	PS.color(x,y,0xdf0301);
 
 	initLineX = x;
 	initLineY = y;
@@ -151,7 +166,9 @@ PS.release = function( x, y, data, options ) {
 
 
 	PS.gridSize(GRID_LENGTH, GRID_HEIGHT);
-	PS.gridColor( 0x303030 );
+	PS.gridColor( 0x3b85e5 );
+	PS.borderColor(PS.ALL, PS.ALL, 0xdbd168);
+	PS.color(PS.ALL, PS.ALL, 0x29b800);
 
 	// Uncomment the following code line to inspect x/y parameters:
 
@@ -181,7 +198,7 @@ PS.enter = function( x, y, data, options ) {
 
 	if(MAKE_LINE){
 		PS.debug("Make line is true!!");
-		PS.color(x,y,0x000000);
+		PS.color(x,y,0xdf0301);
 	} else {
 
 	}
@@ -213,6 +230,11 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.exit = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
 
+	if(MAKE_LINE){
+		PS.color(x,y,0xd5dad6);
+	}
+
+
 	// Uncomment the following code line to inspect x/y parameters:
 
 	// PS.debug( "PS.exit() @ " + x + ", " + y + "\n" );
@@ -237,8 +259,12 @@ PS.exitGrid = function( options ) {
 	"use strict"; // Do not remove this directive!
 
 	// Uncomment the following code line to verify operation:
+	if(MAKE_LINE){
+		PS.audioPlayChannel(fallingID);
+		PS.statusText("Too bad!");
+	}
 	MAKE_LINE = false;
-	PS.statusText("nah can't go out of bounds fam");
+	PS.color(PS.ALL, PS.ALL, 0x29b800);
 
 	// PS.debug( "PS.exitGrid() called\n" );
 
