@@ -23,9 +23,11 @@ let GRID_HEIGHT = 7;
 let initLineX = 0;
 let initLineY = 0;
 
-//audio
+//audio IDs
 let yahooID = ""; //variable to save yahoo
 let fallingID = "";
+let oofID = "";
+let boingID = "";
 
 PS.init = function( system, options ) {
 
@@ -44,27 +46,45 @@ PS.init = function( system, options ) {
 	PS.statusColor( 0xc3d2de );
 	PS.statusText( "Draw lines and have fun!" );
 
-	let loader = function(data){
+	let yahooLoader = function(data){
 		yahooID = data.channel; //save ID
 	}
 
-	let loader2 = function(data){
+	let fallingLoader = function(data){
 		fallingID = data.channel;
+	}
+
+	let oofLoader = function(data){
+		oofID = data.channel;
+	}
+
+	let boingLoader = function(data){
+		boingID = data.channel;
 	}
 
 	//LOAD
 	PS.audioLoad("yahoo", {
 		lock: true,
 		path: "audio/",
-		onLoad: loader //specify loader location
+		onLoad: yahooLoader //specify loader location
 	});
 
 	PS.audioLoad("falling", {
 		lock: true,
-		autoplay: true,
-		volume: 0.0001,
 		path: "audio/",
-		onLoad: loader2 //specify loader location
+		onLoad: fallingLoader //specify loader location
+	});
+
+	PS.audioLoad("oof", {
+		lock: true,
+		path: "audio/",
+		onLoad: oofLoader //specify loader location
+	});
+
+	PS.audioLoad("boing", {
+		lock: true,
+		path: "audio/",
+		onLoad: boingLoader //specify loader location
 	});
 
 	
@@ -146,18 +166,23 @@ PS.release = function( x, y, data, options ) {
 
 	if(lineDifferenceX === 0 && lineDifferenceY === 0){
 		PS.debug("Hold on, there's no difference...");
-		PS.audioPlayChannel(yahooID);
 		if(GRID_LENGTH < 32 && GRID_HEIGHT < 32){
 			PS.debug("Both are less than 32");
-			GRID_LENGTH = GRID_LENGTH + 1;
-			GRID_HEIGHT = GRID_HEIGHT + 1;
+			PS.audioPlayChannel(yahooID);
+			GRID_LENGTH = Math.min(GRID_LENGTH + 2, 32);
+			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
 		} else if(GRID_LENGTH < 32){
+			PS.audioPlayChannel(boingID);
 			PS.debug("x is less than 32");
-			GRID_LENGTH = GRID_LENGTH + 1;
+			GRID_LENGTH = Math.min(GRID_LENGTH + 2, 32);
 		} else if(GRID_HEIGHT < 32){
+			PS.audioPlayChannel(boingID);
 			PS.debug("y is less than 32");
-			GRID_HEIGHT = GRID_HEIGHT + 1;
+			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
+		} else {
+			PS.audioPlayChannel(oofID);
 		}
+
 		//GRID_HEIGHT
 	} else {
 		GRID_LENGTH = GRID_LENGTH - lineDifferenceX;
@@ -202,13 +227,6 @@ PS.enter = function( x, y, data, options ) {
 	} else {
 
 	}
-
-
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.enter() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch enters a bead.
 };
 
 
