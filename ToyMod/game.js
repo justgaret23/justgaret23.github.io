@@ -49,7 +49,6 @@ PS.init = function( system, options ) {
 	PS.audioLoad("yahoo", {
 		lock: true,
 		path: "audio/",
-		fileTypes: "mp3"
 		//onLoad: loader //specify loader location
 	})
 
