@@ -49,7 +49,7 @@ PS.init = function( system, options ) {
 	PS.audioLoad("yahoo", {
 		lock: true,
 		path: "audio/",
-		//onLoad: loader //specify loader location
+		onLoad: loader //specify loader location
 	})
 
 	
@@ -181,7 +181,7 @@ PS.enter = function( x, y, data, options ) {
 	if(MAKE_LINE){
 		PS.debug("Make line is true!!");
 		PS.color(x,y,0x000000);
-		PS.audioPlay( yahooID );
+		PS.audioPlayChannel(yahooID);
 	} else {
 
 	}
