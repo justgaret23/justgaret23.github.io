@@ -22,12 +22,29 @@ let GRID_LENGTH = 7;
 let GRID_HEIGHT = 7;
 let initLineX = 0;
 let initLineY = 0;
+let envMarker = 0;
+let checkExit = false;
 
 //audio IDs
 let yahooID = ""; //variable to save yahoo
 let fallingID = "";
 let oofID = "";
 let boingID = "";
+let hoohooID = "";
+let okeydokeyID = "";
+let jump1ID = "";
+let jump2ID = "";
+let jump3ID = "";
+
+//PRESETS
+//0 - Peach's Castle
+//1 - Jolly Roger Bay
+//2 - Big Boo's Haunt
+//3 - Hazy Maze Cave
+let BACKGROUND_ARRAY = [0x29b800, 0x15B795, 0x332011, 0x303C20];
+let BORDER_ARRAY = [0xdbd168, 0x004951, 0x484845, 0x586e45];
+let PAGECOLOR_ARRAY = [0x3b85c5, 0x1F6497, 0x3939C9, 0x525252];
+let STATUS_ARRAY = [ 0xc3d2de, 0xc3d2de, 0xc3d2de, 0xc3d2de];
 
 PS.init = function( system, options ) {
 
@@ -37,13 +54,13 @@ PS.init = function( system, options ) {
 	
 	// Set background color to Perlenspiel logo gray
 	
-	PS.gridColor( 0x3b85e5 );
-	PS.borderColor(PS.ALL, PS.ALL, 0xdbd168);
-	PS.color(PS.ALL, PS.ALL, 0x29b800);
+	PS.gridColor(PAGECOLOR_ARRAY[0]);
+	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[0]);
+	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[0]);
 	
 	// Change status line color and text
 
-	PS.statusColor( 0xc3d2de );
+	PS.statusColor(STATUS_ARRAY[0]);
 	PS.statusText( "Draw lines and have fun!" );
 
 	let yahooLoader = function(data){
@@ -61,6 +78,27 @@ PS.init = function( system, options ) {
 	let boingLoader = function(data){
 		boingID = data.channel;
 	}
+
+	let hoohooLoader = function(data){
+		hoohooID = data.channel;
+	}
+
+	let okeydokeyLoader = function(data){
+		okeydokeyID = data.channel;
+	}
+
+	let jump1Loader = function(data){
+		jump1ID = data.channel;
+	}
+
+	let jump2Loader = function(data){
+		jump2ID = data.channel;
+	}
+
+	let jump3Loader = function(data){
+		jump3ID = data.channel;
+	}
+
 
 	//LOAD
 	PS.audioLoad("yahoo", {
@@ -87,6 +125,37 @@ PS.init = function( system, options ) {
 		onLoad: boingLoader //specify loader location
 	});
 
+	PS.audioLoad("hoohoo", {
+		lock: true,
+		path: "audio/",
+		onLoad: hoohooLoader //specify loader location
+	});
+
+	PS.audioLoad("okeydokey", {
+		lock: true,
+		autoplay: true,
+		path: "audio/",
+		onLoad: okeydokeyLoader //specify loader location
+	});
+
+	PS.audioLoad("jump1", {
+		lock: true,
+		path: "audio/",
+		onLoad: jump1Loader //specify loader location
+	});
+
+	PS.audioLoad("jump2", {
+		lock: true,
+		path: "audio/",
+		onLoad: jump2Loader //specify loader location
+	});
+
+	PS.audioLoad("jump3", {
+		lock: true,
+		path: "audio/",
+		onLoad: jump3Loader //specify loader location
+	});
+
 	
 	// Preload click sound
 
@@ -104,6 +173,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.touch = function( x, y, data, options ) {
+	checkExit = false;
 	// Toggle color of touched bead from white to black and back again
 	// NOTE: The default value of a bead's [data] is 0, which happens to be equal to PS.COLOR_BLACK
 
@@ -117,30 +187,9 @@ PS.touch = function( x, y, data, options ) {
 
 	PS.color(x,y,0xdf0301);
 
+	//Store the initial value of PS.touch using globals
 	initLineX = x;
 	initLineY = y;
-
-	/*
-	let next; // variable to save next color
-
-	if ( data === PS.COLOR_BLACK ) {
-		next = PS.COLOR_WHITE;
-	}
-	else {
-		next = PS.COLOR_BLACK;
-	}
-	 */
-
-	// NOTE: The above statement could be expressed more succinctly using JavaScript's ternary operator:
-	// let next = ( data === PS.COLOR_BLACK ) ? PS.COLOR_WHITE : PS.COLOR_BLACK;
-	
-	// Remember the newly-changed color by storing it in the bead's data.
-	
-	//PS.data( x, y, next );
-
-	// Play click sound.
-
-
 };
 
 /*
@@ -159,6 +208,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 
 PS.release = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
+	checkExit = false;
 
 	MAKE_LINE = false;
 	let lineDifferenceX = Math.abs(initLineX - x);
@@ -173,27 +223,50 @@ PS.release = function( x, y, data, options ) {
 			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
 		} else if(GRID_LENGTH < 32){
 			PS.audioPlayChannel(boingID);
+			PS.statusText("boingo");
 			PS.debug("x is less than 32");
 			GRID_LENGTH = Math.min(GRID_LENGTH + 2, 32);
 		} else if(GRID_HEIGHT < 32){
 			PS.audioPlayChannel(boingID);
+			PS.statusText("bongo");
 			PS.debug("y is less than 32");
 			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
 		} else {
 			PS.audioPlayChannel(oofID);
+			if(envMarker < 3){
+				envMarker = envMarker + 1;
+			} else {
+				envMarker = 0;
+			}
+
+			switch(envMarker){
+				case 0:
+					PS.statusText("You've oof'ed right back where you started!");
+					break;
+				case 1:
+					PS.statusText("You've oof'ed into the wrong spooky ocean");
+					break;
+				case 2:
+					PS.statusText("You've oof'ed into the deadly spooky mansion");
+					break;
+				case 3:
+					PS.statusText("You've oof'ed into the wrong deep dank cave.")
+			}
 		}
 
 		//GRID_HEIGHT
 	} else {
 		GRID_LENGTH = GRID_LENGTH - lineDifferenceX;
 		GRID_HEIGHT = GRID_HEIGHT - lineDifferenceY;
+		PS.audioPlayChannel(hoohooID);
 	}
 
 
 	PS.gridSize(GRID_LENGTH, GRID_HEIGHT);
-	PS.gridColor( 0x3b85e5 );
-	PS.borderColor(PS.ALL, PS.ALL, 0xdbd168);
-	PS.color(PS.ALL, PS.ALL, 0x29b800);
+	PS.gridColor(PAGECOLOR_ARRAY[envMarker]);
+	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[envMarker]);
+	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[envMarker]);
+
 
 	// Uncomment the following code line to inspect x/y parameters:
 
@@ -248,9 +321,34 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.exit = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
 
+	PS.debug("start exit");
+
+	PS.debug("checkExit: " + checkExit);
+
 	if(MAKE_LINE){
 		PS.color(x,y,0xd5dad6);
 	}
+	PS.debug("makeLine: " + MAKE_LINE);
+
+	if(MAKE_LINE && !checkExit){
+
+		PS.debug("Are you here?");
+		//Play audio
+		let jumpClip = PS.random(3);
+
+		switch(jumpClip){
+			case 1:
+				PS.audioPlayChannel(jump1ID);
+				break;
+			case 2:
+				PS.audioPlayChannel(jump2ID);
+				break;
+			case 3:
+				PS.audioPlayChannel(jump3ID);
+				break;
+		}
+	}
+	checkExit = true;
 
 
 	// Uncomment the following code line to inspect x/y parameters:
@@ -282,7 +380,9 @@ PS.exitGrid = function( options ) {
 		PS.statusText("Too bad!");
 	}
 	MAKE_LINE = false;
-	PS.color(PS.ALL, PS.ALL, 0x29b800);
+	PS.gridColor(PAGECOLOR_ARRAY[envMarker]);
+	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[envMarker]);
+	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[envMarker]);
 
 	// PS.debug( "PS.exitGrid() called\n" );
 
