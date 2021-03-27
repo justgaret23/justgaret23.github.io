@@ -23,6 +23,9 @@ let GRID_HEIGHT = 7;
 let initLineX = 0;
 let initLineY = 0;
 
+//audio
+let yahooID = ""; //variable to save yahoo
+
 PS.init = function( system, options ) {
 
 	// Establish grid dimensions
@@ -36,7 +39,20 @@ PS.init = function( system, options ) {
 	// Change status line color and text
 
 	PS.statusColor( PS.COLOR_WHITE );
-	PS.statusText( "Touch any bead" );
+	PS.statusText( "Draw lines and have fun!" );
+
+	let loader = function(data){
+		yahooID = data.channel; //save ID
+	}
+
+	//LOAD
+	PS.audioLoad("yahoo", {
+		lock: true,
+		path: "audio/",
+		fileTypes: "mp3"
+		//onLoad: loader //specify loader location
+	})
+
 	
 	// Preload click sound
 
@@ -135,6 +151,7 @@ PS.release = function( x, y, data, options ) {
 
 
 	PS.gridSize(GRID_LENGTH, GRID_HEIGHT);
+	PS.gridColor( 0x303030 );
 
 	// Uncomment the following code line to inspect x/y parameters:
 
@@ -165,7 +182,7 @@ PS.enter = function( x, y, data, options ) {
 	if(MAKE_LINE){
 		PS.debug("Make line is true!!");
 		PS.color(x,y,0x000000);
-		PS.audioPlay( "fx_click" );
+		PS.audioPlay( yahooID );
 	} else {
 
 	}
