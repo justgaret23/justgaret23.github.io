@@ -17,26 +17,18 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-let MAKE_LINE = false;
-let GRID_LENGTH = 7;
-let GRID_HEIGHT = 7;
-let initLineX = 0;
-let initLineY = 0;
-let envMarker = 0;
-let checkExit = false;
+let MAKE_LINE = false; //Keeps track of whether a player is drawing a line
+let GRID_LENGTH = 7; //Length of the grid
+let GRID_HEIGHT = 7; //Height of the grid
+let initLineX = 0; //Placeholder var that holds the starting x coordinate of a line
+let initLineY = 0; //Placeholder var that holds the starting y coordinate of a line
+let envMarker = 0; //Array marker that keeps track of which set of colors should be used
+let pastFirstBead = false; //A boolean that allows a sound to play on the first pixel of the line, but no other pixels.
 
 //audio IDs
-let yahooID = ""; //variable to save yahoo
-let fallingID = "";
-let oofID = "";
-let boingID = "";
-let hoohooID = "";
-let okeydokeyID = "";
-let jump1ID = "";
-let jump2ID = "";
-let jump3ID = "";
+let yahooID,fallingID,oofID,boingID,hoohooID,okeydokeyID,jump1ID,jump2ID,jump3ID = "";
 
-//PRESETS
+//PRESETS - Each index of the array has a different environment set based on levels from Super Mario 64
 //0 - Peach's Castle
 //1 - Jolly Roger Bay
 //2 - Big Boo's Haunt
@@ -45,24 +37,24 @@ let BACKGROUND_ARRAY = [0x29b800, 0x15B795, 0x332011, 0x303C20];
 let BORDER_ARRAY = [0xdbd168, 0x004951, 0x484845, 0x586e45];
 let PAGECOLOR_ARRAY = [0x3b85c5, 0x1F6497, 0x3939C9, 0x525252];
 let STATUS_ARRAY = [ 0xc3d2de, 0xc3d2de, 0xc3d2de, 0xc3d2de];
+let LINE_HEAD = 0xdf0301;
+let LINE_TRAIL = 0xd5dad6;
 
 PS.init = function( system, options ) {
 
-	// Establish grid dimensions
-	
+	//Establish grid dimensions
 	PS.gridSize(GRID_LENGTH, GRID_HEIGHT);
 	
-	// Set background color to Perlenspiel logo gray
-	
+	//Initialize grid, border, and page colors from the first elements of the array
 	PS.gridColor(PAGECOLOR_ARRAY[0]);
 	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[0]);
 	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[0]);
 	
-	// Change status line color and text
-
+	//Status lines
 	PS.statusColor(STATUS_ARRAY[0]);
 	PS.statusText( "Draw lines and have fun!" );
 
+	//Defining audio loaders and saving IDs
 	let yahooLoader = function(data){
 		yahooID = data.channel; //save ID
 	}
@@ -100,7 +92,8 @@ PS.init = function( system, options ) {
 	}
 
 
-	//LOAD
+	//Executing audio loaders.
+	//Most sounds only initialize the lock and take the path to the audio folder to play the sound.
 	PS.audioLoad("yahoo", {
 		lock: true,
 		path: "audio/",
@@ -131,6 +124,7 @@ PS.init = function( system, options ) {
 		onLoad: hoohooLoader //specify loader location
 	});
 
+	//This sound plays once upon starting the game.
 	PS.audioLoad("okeydokey", {
 		lock: true,
 		autoplay: true,
@@ -155,11 +149,6 @@ PS.init = function( system, options ) {
 		path: "audio/",
 		onLoad: jump3Loader //specify loader location
 	});
-
-	
-	// Preload click sound
-
-
 };
 
 /*
@@ -173,19 +162,15 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.touch = function( x, y, data, options ) {
-	checkExit = false;
-	// Toggle color of touched bead from white to black and back again
-	// NOTE: The default value of a bead's [data] is 0, which happens to be equal to PS.COLOR_BLACK
 
-	//PS.color( x, y, data ); // set color to current value of data
-	
-	// Decide what the next color should be.
-	// If the current value was black, change it to white.
-	// Otherwise change it to black.
+	//Seeing as how we are starting a new line, we have not made one bead yet
+	pastFirstBead = false;
+
+	//Indicate that we are making a line
 	MAKE_LINE = true;
-	PS.debug("makeline is all set");
 
-	PS.color(x,y,0xdf0301);
+	//Set the color equal to the line head
+	PS.color(x,y,LINE_HEAD);
 
 	//Store the initial value of PS.touch using globals
 	initLineX = x;
@@ -208,30 +193,36 @@ This function doesn't have to do anything. Any value returned is ignored.
 
 PS.release = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
-	checkExit = false;
 
-	MAKE_LINE = false;
+
+	//Get the difference between the start and end lines.
+	//If the difference is zero, we have not made a line.
+		//Looping back in is prevented by using pastFirstBead
 	let lineDifferenceX = Math.abs(initLineX - x);
 	let lineDifferenceY = Math.abs(initLineY - y);
 
-	if(lineDifferenceX === 0 && lineDifferenceY === 0){
-		PS.debug("Hold on, there's no difference...");
+	//If we have not made a line, expand the grid
+	//If we have made a line, shorten the grid
+	if(lineDifferenceX === 0 && lineDifferenceY === 0 && !pastFirstBead){
+
+		//Throughout this code, we use math.min to check for odd cases of 33.
 		if(GRID_LENGTH < 32 && GRID_HEIGHT < 32){
-			PS.debug("Both are less than 32");
+			//Expand both height and width if both aren't maxed
 			PS.audioPlayChannel(yahooID);
 			GRID_LENGTH = Math.min(GRID_LENGTH + 2, 32);
 			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
 		} else if(GRID_LENGTH < 32){
+			//Only expand the length if height is maxed
 			PS.audioPlayChannel(boingID);
 			PS.statusText("boingo");
-			PS.debug("x is less than 32");
 			GRID_LENGTH = Math.min(GRID_LENGTH + 2, 32);
 		} else if(GRID_HEIGHT < 32){
+			//Only expand height if length is maxed
 			PS.audioPlayChannel(boingID);
 			PS.statusText("bongo");
-			PS.debug("y is less than 32");
 			GRID_HEIGHT = Math.min(GRID_HEIGHT + 2, 32);
 		} else {
+			//If we cannot expand, play oof and change the environment
 			PS.audioPlayChannel(oofID);
 			if(envMarker < 3){
 				envMarker = envMarker + 1;
@@ -239,6 +230,7 @@ PS.release = function( x, y, data, options ) {
 				envMarker = 0;
 			}
 
+			//Display unique status text upon switching environments
 			switch(envMarker){
 				case 0:
 					PS.statusText("You've oof'ed right back where you started!");
@@ -253,26 +245,22 @@ PS.release = function( x, y, data, options ) {
 					PS.statusText("You've oof'ed into the wrong deep dank cave.")
 			}
 		}
-
-		//GRID_HEIGHT
 	} else {
+		//Subtract line difference x and y from the grid
 		GRID_LENGTH = GRID_LENGTH - lineDifferenceX;
 		GRID_HEIGHT = GRID_HEIGHT - lineDifferenceY;
 		PS.audioPlayChannel(hoohooID);
 	}
 
+	//Set first bead and make line equal to false
+	pastFirstBead = false;
+	MAKE_LINE = false;
 
+	//Re-initialize the grid based on the new length, height, and current color information
 	PS.gridSize(GRID_LENGTH, GRID_HEIGHT);
 	PS.gridColor(PAGECOLOR_ARRAY[envMarker]);
 	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[envMarker]);
 	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[envMarker]);
-
-
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.release() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse button/touch is released over a bead.
 };
 
 
@@ -294,12 +282,8 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.enter = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
 
-	if(MAKE_LINE){
-		PS.debug("Make line is true!!");
-		PS.color(x,y,0xdf0301);
-	} else {
-
-	}
+	//Always set the entered square equal to the line head
+	PS.color(x,y,LINE_HEAD);
 };
 
 
@@ -321,21 +305,22 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.exit = function( x, y, data, options ) {
 	"use strict"; // Do not remove this directive!
 
-	PS.debug("start exit");
-
-	PS.debug("checkExit: " + checkExit);
-
+	//Leave a trail in the head's wake if we are making a line
+		//Otherwise, reset the environment after moving past
 	if(MAKE_LINE){
-		PS.color(x,y,0xd5dad6);
+		PS.color(x,y,LINE_TRAIL);
+	} else {
+		PS.color(x,y,BACKGROUND_ARRAY[envMarker]);
 	}
 	PS.debug("makeLine: " + MAKE_LINE);
 
-	if(MAKE_LINE && !checkExit){
+	//We play the jump audio if we are making a line and have not made a bead yet
+	if(MAKE_LINE && !pastFirstBead){
 
-		PS.debug("Are you here?");
-		//Play audio
+		//Randomly select jump audio clip
 		let jumpClip = PS.random(3);
 
+		//Play the randomly selected jump audio clip
 		switch(jumpClip){
 			case 1:
 				PS.audioPlayChannel(jump1ID);
@@ -348,14 +333,8 @@ PS.exit = function( x, y, data, options ) {
 				break;
 		}
 	}
-	checkExit = true;
-
-
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.exit() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch exits a bead.
+	//Set pastFirstBead to true, preventing jump from playing for the rest of the line
+	pastFirstBead = true;
 };
 
 
@@ -379,14 +358,14 @@ PS.exitGrid = function( options ) {
 		PS.audioPlayChannel(fallingID);
 		PS.statusText("Too bad!");
 	}
+
+	//Set MAKE_LINE equal to false to reset line operations
 	MAKE_LINE = false;
+
+	//Re-initialize colors
 	PS.gridColor(PAGECOLOR_ARRAY[envMarker]);
 	PS.borderColor(PS.ALL, PS.ALL, BORDER_ARRAY[envMarker]);
 	PS.color(PS.ALL, PS.ALL, BACKGROUND_ARRAY[envMarker]);
-
-	// PS.debug( "PS.exitGrid() called\n" );
-
-	// Add code here for when the mouse cursor/touch moves off the grid.
 };
 
 
