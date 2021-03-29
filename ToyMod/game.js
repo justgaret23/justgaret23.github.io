@@ -97,30 +97,35 @@ PS.init = function( system, options ) {
 	PS.audioLoad("yahoo", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: yahooLoader //specify loader location
 	});
 
 	PS.audioLoad("falling", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: fallingLoader //specify loader location
 	});
 
 	PS.audioLoad("oof", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: oofLoader //specify loader location
 	});
 
 	PS.audioLoad("boing", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: boingLoader //specify loader location
 	});
 
 	PS.audioLoad("hoohoo", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: hoohooLoader //specify loader location
 	});
 
@@ -129,24 +134,28 @@ PS.init = function( system, options ) {
 		lock: true,
 		autoplay: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: okeydokeyLoader //specify loader location
 	});
 
 	PS.audioLoad("jump1", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: jump1Loader //specify loader location
 	});
 
 	PS.audioLoad("jump2", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: jump2Loader //specify loader location
 	});
 
 	PS.audioLoad("jump3", {
 		lock: true,
 		path: "audio/",
+		volume: 0.25,
 		onLoad: jump3Loader //specify loader location
 	});
 };
@@ -312,7 +321,6 @@ PS.exit = function( x, y, data, options ) {
 	} else {
 		PS.color(x,y,BACKGROUND_ARRAY[envMarker]);
 	}
-	PS.debug("makeLine: " + MAKE_LINE);
 
 	//We play the jump audio if we are making a line and have not made a bead yet
 	if(MAKE_LINE && !pastFirstBead){
