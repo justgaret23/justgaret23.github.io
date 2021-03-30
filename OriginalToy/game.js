@@ -58,6 +58,7 @@ let BUBBLEWRAP = {
 			BUBBLEWRAP.length = 8;
 			BUBBLEWRAP.height = 8;
 		}
+		PS.gridSize( BUBBLEWRAP.length, BUBBLEWRAP.height); // or whatever size you want
 
 		BUBBLEWRAP.wrapArray = new Array(BUBBLEWRAP.length*BUBBLEWRAP.height);
 
@@ -66,8 +67,11 @@ let BUBBLEWRAP = {
 		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
 				let thickness = PS.random(6);
-				PS.color(x,y,150,150,150);
-				PS.alpha(x,y,this.bubbleOpacityRate*thickness);
+				if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height)){
+					PS.color(x,y,150,150,150);
+					PS.alpha(x,y,this.bubbleOpacityRate*thickness);
+				}
+
 				//let val = (PS.random(32) - 1) + 128;
 				//PS.color(x, y, val, val, val);
 
@@ -76,6 +80,8 @@ let BUBBLEWRAP = {
 			}
 		}
 		//Make them circles and provide unique grid color/shadow
+
+		PS.border(PS.ALL,PS.ALL,0);
 		PS.radius(PS.ALL,PS.ALL,30);
 		PS.gridColor(0xcdcdcd);
 		PS.gridShadow(true, 0x999999);
@@ -194,10 +200,11 @@ PS.init = function( system, options ) {
 
 
 	//Initialize bubble wrap grid, also remove borders
-	PS.gridSize( BUBBLEWRAP.length, BUBBLEWRAP.height); // or whatever size you want
-	PS.border(PS.ALL,PS.ALL,0);
-	PS.statusText("Drag to pop!")
+
+
 	BUBBLEWRAP.makeWrap();
+
+	PS.statusText("Drag to pop!")
 	// Install additional initialization code
 	// here as needed
 
