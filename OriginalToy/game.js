@@ -42,16 +42,23 @@ let BUBBLEWRAP = {
 	//Initial length and height of board
 	length: 10,
 	height: 10,
+	wrapArray: 0,
+	isPopping: false,
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
+
+		BUBBLEWRAP.wrapArray = new Array(BUBBLEWRAP.length*BUBBLEWRAP.height);
 
 		// Create random gray floor (currently inactive for testing purposes)
 		PS.gridPlane(wrapperPlane);
 		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
 				let val = (PS.random(32) - 1) + 128;
-				PS.color(x, y, 255, 255, 255);
+				PS.color(x, y, val, val, val);
+
+				//Change the array part for each element
+				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = 1;
 			}
 		}
 		//Make them circles and provide unique grid color/shadow
@@ -93,6 +100,16 @@ let BUBBLEWRAP = {
 		PS.spriteMove(MIDDLE_ID,x,y);
 		PS.spriteMove(OUTER_ID,x,y);
 		//PS.audioPlay("fx_click");
+	},
+
+	centerPop: function(x,y){
+		PS.color(x,y,0xFFFFFF);
+		if(BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] === 1){
+			//play sound effect and set wrapArray element to zero
+			PS.audioPlay("fx_pop");
+			BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = 0;
+
+		}
 	}
 };
 
@@ -145,7 +162,8 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.touch = function( x, y, data, options ) {
 	// Uncomment the following code line
 	// to inspect x/y parameters:
-	PS.audioPlay("fx_pop");
+	BUBBLEWRAP.centerPop(x,y);
+
 
 	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
 
