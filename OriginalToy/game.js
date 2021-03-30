@@ -23,7 +23,9 @@ Any value returned is ignored.
 */
 
 //Loaded sprite ID's
-let POPPER_ID;
+let CENTER_ID;
+let MIDDLE_ID;
+let OUTER_ID;
 
 //Initial starting positions (not very helpful in the intended design but can prove it works)
 let xPos = 5;
@@ -31,16 +33,28 @@ let yPos = 5;
 
 //Planes of the grid and the popper
 let wrapperPlane = 0;
-let popperPlane = 1;
+let centerPlane = 1;
+let middlePlane = 2;
+let outerPlane = 3;
 
 //Bubblewrap globals
 let BUBBLEWRAP = {
 	//Initial length and height of board
 	length: 10,
 	height: 10,
+	wrapStatus: 0,
+	//   0 1 2 3 4 5
+	// 0 0 1 2 3 4 5
+	// 1 6 7 8 9 10 11
+	// 2
+	// 3
+	// 4
+	// 5
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
+
+		BUBBLEWRAP.wrapStatus = new Array(length*length);
 
 		// Create random gray floor (currently inactive for testing purposes)
 		PS.gridPlane(wrapperPlane);
@@ -48,6 +62,9 @@ let BUBBLEWRAP = {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
 				let val = (PS.random(32) - 1) + 128;
 				PS.color(x, y, 255, 255, 255);
+
+				//Do other stuff related to wrapping here
+				wrapStatus[(BUBBLEWRAP.length * y) + x] = 1;
 			}
 		}
 		//Make them circles and provide unique grid color/shadow
@@ -56,21 +73,43 @@ let BUBBLEWRAP = {
 		PS.gridShadow(true, 0x999999);
 
 		//Make sprite loader here
-		let loader = function(data){
-			POPPER_ID = PS.spriteImage(data);
-			PS.spritePlane(POPPER_ID, popperPlane);
-			PS.spriteAxis(POPPER_ID, 2, 2);
-			PS.spriteMove(POPPER_ID, xPos, yPos);
+		let centerLoader = function(data){
+			CENTER_ID = PS.spriteImage(data);
+			PS.spritePlane(CENTER_ID, centerPlane);
+			PS.spriteAxis(CENTER_ID, 2, 2);
+			PS.spriteMove(CENTER_ID, xPos, yPos);
+		};
+
+		let middleLoader = function(data){
+			MIDDLE_ID = PS.spriteImage(data);
+			PS.spritePlane(MIDDLE_ID, middlePlane);
+			PS.spriteAxis(MIDDLE_ID, 2, 2);
+			PS.spriteMove(MIDDLE_ID, xPos, yPos);
+		};
+
+		let outerLoader = function(data){
+			OUTER_ID = PS.spriteImage(data);
+			PS.spritePlane(OUTER_ID, outerPlane);
+			PS.spriteAxis(OUTER_ID, 2, 2);
+			PS.spriteMove(OUTER_ID, xPos, yPos);
 		};
 
 		//Actually load image here
-		PS.imageLoad("images/center.png", loader);
+		PS.imageLoad("images/center.png", centerLoader);
+		PS.imageLoad("images/middle.png", middleLoader);
+		PS.imageLoad("images/outer.png", outerLoader);
 	},
 
 	//Move the sprite to wherever the mouse is
 	move: function(x,y){
-		PS.spriteMove(POPPER_ID,x,y);
-		PS.audioPlay("fx_click");
+		PS.spriteMove(CENTER_ID,x,y);
+		PS.spriteMove(MIDDLE_ID,x,y);
+		PS.spriteMove(OUTER_ID,x,y);
+		//PS.audioPlay("fx_click");
+	},
+
+	popCenter: function(x,y){
+
 	}
 };
 
@@ -123,6 +162,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.touch = function( x, y, data, options ) {
 	// Uncomment the following code line
 	// to inspect x/y parameters:
+	PS.audioPlay("fx_pop");
 
 	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
 
