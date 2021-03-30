@@ -59,6 +59,7 @@ let BUBBLEWRAP = {
 		let loader = function(data){
 			POPPER_ID = PS.spriteImage(data);
 			PS.spritePlane(POPPER_ID, popperPlane);
+			PS.spriteAxis(POPPER_ID, 2, 2);
 			PS.spriteMove(POPPER_ID, xPos, yPos);
 		};
 
