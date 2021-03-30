@@ -42,19 +42,9 @@ let BUBBLEWRAP = {
 	//Initial length and height of board
 	length: 10,
 	height: 10,
-	wrapStatus: 0,
-	//   0 1 2 3 4 5
-	// 0 0 1 2 3 4 5
-	// 1 6 7 8 9 10 11
-	// 2
-	// 3
-	// 4
-	// 5
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
-
-		BUBBLEWRAP.wrapStatus = new Array(length*length);
 
 		// Create random gray floor (currently inactive for testing purposes)
 		PS.gridPlane(wrapperPlane);
@@ -62,9 +52,6 @@ let BUBBLEWRAP = {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
 				let val = (PS.random(32) - 1) + 128;
 				PS.color(x, y, 255, 255, 255);
-
-				//Do other stuff related to wrapping here
-				wrapStatus[(BUBBLEWRAP.length * y) + x] = 1;
 			}
 		}
 		//Make them circles and provide unique grid color/shadow
@@ -106,10 +93,6 @@ let BUBBLEWRAP = {
 		PS.spriteMove(MIDDLE_ID,x,y);
 		PS.spriteMove(OUTER_ID,x,y);
 		//PS.audioPlay("fx_click");
-	},
-
-	popCenter: function(x,y){
-
 	}
 };
 
