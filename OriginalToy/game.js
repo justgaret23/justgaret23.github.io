@@ -40,13 +40,24 @@ let outerPlane = 3;
 //Bubblewrap globals
 let BUBBLEWRAP = {
 	//Initial length and height of board
-	length: 10,
-	height: 10,
+	length: 8,
+	height: 8,
 	wrapArray: 0,
+	bubbleOpacityRate: 30,
+	maxWrapDimension: 15,
 	isPopping: false,
+	beadsLeft: true,
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
+
+		if(BUBBLEWRAP.length < this.maxWrapDimension && BUBBLEWRAP.height < this.maxWrapDimension){
+			BUBBLEWRAP.length += PS.random(3);
+			BUBBLEWRAP.height += PS.random(3);
+		} else {
+			BUBBLEWRAP.length = 8;
+			BUBBLEWRAP.height = 8;
+		}
 
 		BUBBLEWRAP.wrapArray = new Array(BUBBLEWRAP.length*BUBBLEWRAP.height);
 
@@ -54,16 +65,19 @@ let BUBBLEWRAP = {
 		PS.gridPlane(wrapperPlane);
 		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
-				let val = (PS.random(32) - 1) + 128;
-				PS.color(x, y, val, val, val);
+				let thickness = PS.random(6);
+				PS.color(x,y,150,150,150);
+				PS.alpha(x,y,this.bubbleOpacityRate*thickness);
+				//let val = (PS.random(32) - 1) + 128;
+				//PS.color(x, y, val, val, val);
 
 				//Change the array part for each element
-				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = 1;
+				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = thickness;
 			}
 		}
 		//Make them circles and provide unique grid color/shadow
 		PS.radius(PS.ALL,PS.ALL,30);
-		PS.gridColor(0xbdbdbd);
+		PS.gridColor(0xcdcdcd);
 		PS.gridShadow(true, 0x999999);
 
 		//Make sprite loader here
@@ -71,27 +85,44 @@ let BUBBLEWRAP = {
 			CENTER_ID = PS.spriteImage(data);
 			PS.spritePlane(CENTER_ID, centerPlane);
 			PS.spriteAxis(CENTER_ID, 2, 2);
-			PS.spriteMove(CENTER_ID, xPos, yPos);
+			//PS.spriteMove(CENTER_ID, xPos, yPos);
 		};
 
 		let middleLoader = function(data){
 			MIDDLE_ID = PS.spriteImage(data);
 			PS.spritePlane(MIDDLE_ID, middlePlane);
 			PS.spriteAxis(MIDDLE_ID, 2, 2);
-			PS.spriteMove(MIDDLE_ID, xPos, yPos);
+			//PS.spriteMove(MIDDLE_ID, xPos, yPos);
 		};
 
 		let outerLoader = function(data){
 			OUTER_ID = PS.spriteImage(data);
 			PS.spritePlane(OUTER_ID, outerPlane);
 			PS.spriteAxis(OUTER_ID, 2, 2);
-			PS.spriteMove(OUTER_ID, xPos, yPos);
+			//PS.spriteMove(OUTER_ID, xPos, yPos);
 		};
 
 		//Actually load image here
 		PS.imageLoad("images/center.png", centerLoader);
 		PS.imageLoad("images/middle.png", middleLoader);
 		PS.imageLoad("images/outer.png", outerLoader);
+	},
+
+	//check to see if the wrap
+	checkWrap: function(){
+		//Assume there are no beads left, and try to disprove this assertion.
+		BUBBLEWRAP.beadsLeft = false;
+		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
+			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
+				if(BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] > 0){
+					BUBBLEWRAP.beadsLeft = true;
+					break;
+				}
+			}
+		}
+		if(!BUBBLEWRAP.beadsLeft){
+			PS.statusText("Press an arrow key to get more bubblewrap!");
+		}
 	},
 
 	//Move the sprite to wherever the mouse is
@@ -102,14 +133,50 @@ let BUBBLEWRAP = {
 		//PS.audioPlay("fx_click");
 	},
 
-	centerPop: function(x,y){
-		PS.color(x,y,0xFFFFFF);
-		if(BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] === 1){
-			//play sound effect and set wrapArray element to zero
-			PS.audioPlay("fx_pop");
-			BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = 0;
-
+	centerPop: function(x,y, popStrength){
+		if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height)){
+			//(x,y,0xFFFFFF);
+			let bubbleStrength = BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x];
+			if(bubbleStrength > 0){
+				let bubbleHealth = bubbleStrength - popStrength;
+				//play sound effect depending on game
+				if(bubbleHealth === 0){
+					PS.statusText("precise pop!");
+					PS.audioPlay("fx_pop", {volume: 0.05});
+					PS.alpha(x,y,0);
+				} else if(bubbleHealth < 0){
+					PS.statusText("overkill pop!");
+					PS.audioPlay("fx_pop", {volume: 0.05});
+					PS.alpha(x,y,0);
+				} else if(bubbleHealth > 0){
+					PS.alpha(x,y,this.bubbleOpacityRate*bubbleHealth);
+					PS.audioPlay("fx_pop", {volume: 0.05});
+				}
+				PS.audioPlay("fx_pop", {volume: 0.01});
+				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = Math.max(0, bubbleHealth);
+			}
+			//Check to see if there are any bubbles left
+			this.checkWrap();
 		}
+	},
+
+	middlePop: function(x,y){
+		this.centerPop(x-1,y,2);
+		this.centerPop(x+1,y,2);
+		this.centerPop(x,y-1,2);
+		this.centerPop(x,y+1,2);
+	},
+
+	outerPop: function(x,y){
+		this.centerPop(x-2,y,1);
+		this.centerPop(x+2,y,1);
+		this.centerPop(x,y-2,1);
+		this.centerPop(x,y+2,1);
+		this.centerPop(x-1,y-1,1);
+		this.centerPop(x-1,y+1,1);
+		this.centerPop(x+1,y-1,1);
+		this.centerPop(x+1,y+1,1);
+
 	}
 };
 
@@ -129,6 +196,7 @@ PS.init = function( system, options ) {
 	//Initialize bubble wrap grid, also remove borders
 	PS.gridSize( BUBBLEWRAP.length, BUBBLEWRAP.height); // or whatever size you want
 	PS.border(PS.ALL,PS.ALL,0);
+	PS.statusText("Drag to pop!")
 	BUBBLEWRAP.makeWrap();
 	// Install additional initialization code
 	// here as needed
@@ -162,7 +230,10 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.touch = function( x, y, data, options ) {
 	// Uncomment the following code line
 	// to inspect x/y parameters:
-	BUBBLEWRAP.centerPop(x,y);
+	BUBBLEWRAP.isPopping = true;
+	BUBBLEWRAP.centerPop(x,y,3);
+	BUBBLEWRAP.middlePop(x,y);
+	BUBBLEWRAP.outerPop(x,y);
 
 
 	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
@@ -182,6 +253,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.release = function( x, y, data, options ) {
+	BUBBLEWRAP.isPopping = false;
 	// Uncomment the following code line to inspect x/y parameters:
 
 	// PS.debug( "PS.release() @ " + x + ", " + y + "\n" );
@@ -204,6 +276,12 @@ PS.enter = function( x, y, data, options ) {
 
 	//Move the popper to the mouse's current location
 	BUBBLEWRAP.move(x,y);
+
+	if(BUBBLEWRAP.isPopping){
+		BUBBLEWRAP.centerPop(x,y,3);
+		BUBBLEWRAP.middlePop(x,y);
+		BUBBLEWRAP.outerPop(x,y);
+	}
 
 	// PS.debug( "PS.enter() @ " + x + ", " + y + "\n" );
 
@@ -236,6 +314,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.exitGrid = function( options ) {
+	//BUBBLEWRAP.isPopping = false;
 	// Uncomment the following code line to verify operation:
 
 	// PS.debug( "PS.exitGrid() called\n" );
@@ -256,7 +335,25 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.keyDown = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
 
-	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
+	PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
+	if(!BUBBLEWRAP.beadsLeft){
+		switch(key){
+			case PS.KEY_ARROW_UP:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.makeWrap();
+
+				let screamSignifier = PS.random(10);
+				if(screamSignifier > 8){
+					PS.statusText("Do not press enter for your own good.");
+				} else {
+					PS.statusText("Length: " + BUBBLEWRAP.length + ", Height: " + BUBBLEWRAP.height);
+				}
+
+				break;
+		}
+	}
+
+
 
 	// Add code here for when a key is pressed.
 };
