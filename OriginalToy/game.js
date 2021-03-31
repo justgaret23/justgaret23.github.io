@@ -39,12 +39,22 @@ let BUBBLEWRAP = {
 	length: 8,
 	height: 8,
 	wrapArray: 0,
-	bubbleOpacityRate: 30,
+	bubbleOpacityRate: 40,
 	maxWrapDimension: 15,
 	isPopping: false,
 	beadsLeft: true,
 	oneCycleComplete: false,
-	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff],
+
+	//Array colors:
+	//0 - grey
+	//1 - Red
+	//2 - green
+	//3 - blue
+	//4 - yellow
+	//5 - magenta
+	//6 - cyan
+	//7 - black
+	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff, 0x000000],
 	colorArrayMarker: 0,
 
 	//makeWrap: creates the wrapper and the bubble popper
@@ -122,7 +132,8 @@ let BUBBLEWRAP = {
 				}
 			}
 		}
-		//Play status messages prompting the player to
+
+		//Play status messages prompting the player to do stuff
 		if(!BUBBLEWRAP.beadsLeft){
 			//oneCycleComplete makes the secret status messages only play after the first one
 			if(BUBBLEWRAP.oneCycleComplete){
@@ -132,7 +143,11 @@ let BUBBLEWRAP = {
 				} else if(secretSignifier < 3){
 					PS.statusText("Have you tried pressing Z yet?");
 				} else if(secretSignifier >= 3 && secretSignifier < 5){
-					PS.statusText("Nothing important will happen if you press P.")
+					PS.statusText("X is a rather unimportant button.");
+				} else if(secretSignifier >= 5 && secretSignifier < 7){
+					PS.statusText("Nothing to C here.");
+				} else if(secretSignifier >= 7 && secretSignifier < 9){
+					PS.statusText("Different directions do different things!");
 				}
 			} else {
 				PS.statusText("Press an arrow key to get more bubblewrap!");
@@ -156,11 +171,9 @@ let BUBBLEWRAP = {
 				let bubbleHealth = bubbleStrength - popStrength;
 				//play sound effect depending on game
 				if(bubbleHealth === 0){
-					PS.statusText("precise pop!");
 					PS.audioPlay("fx_pop", {volume: 0.05});
 					PS.alpha(x,y,0);
 				} else if(bubbleHealth < 0){
-					PS.statusText("overkill pop!");
 					PS.audioPlay("fx_pop", {volume: 0.05});
 					PS.glyph(x,y, "ඞ");
 					PS.alpha(x,y,0);
@@ -376,6 +389,23 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 				PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 3;
 				BUBBLEWRAP.makeWrap();
+				break;
+			//Z
+			case 122:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 4;
+				BUBBLEWRAP.makeWrap();
+				break;
+			case 120:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 5;
+				BUBBLEWRAP.makeWrap();
+				break;
+			case 99:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 6;
+				BUBBLEWRAP.makeWrap();
+				break;
 		}
 
 		BUBBLEWRAP.beadsLeft = true;
