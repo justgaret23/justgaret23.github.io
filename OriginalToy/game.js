@@ -139,7 +139,7 @@ let BUBBLEWRAP = {
 			if(BUBBLEWRAP.oneCycleComplete){
 				let secretSignifier = PS.random(10);
 				if(secretSignifier > 8){
-					PS.statusText("Do not press enter for your own good.");
+					PS.statusText("I'll probably make something cheeky later.");
 				} else if(secretSignifier < 3){
 					PS.statusText("Have you tried pressing Z yet?");
 				} else if(secretSignifier >= 3 && secretSignifier < 5){
@@ -169,19 +169,21 @@ let BUBBLEWRAP = {
 			let bubbleStrength = BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x];
 			if(bubbleStrength > 0){
 				let bubbleHealth = bubbleStrength - popStrength;
+
+				//Randomly assign a pop noise using rand
+				let soundPicker = PS.random(3);
+
+				this.callPopSound(popStrength, soundPicker);
+
 				//play sound effect depending on game
 				if(bubbleHealth === 0){
-					PS.audioPlay("fx_pop", {volume: 0.05});
 					PS.alpha(x,y,0);
 				} else if(bubbleHealth < 0){
-					PS.audioPlay("fx_pop", {volume: 0.05});
-					PS.glyph(x,y, "ඞ");
+					PS.glyph(x,y, "X");
 					PS.alpha(x,y,0);
 				} else if(bubbleHealth > 0){
-					PS.alpha(x,y,this.bubbleOpacityRate*bubbleHealth);
-					PS.audioPlay("fx_pop", {volume: 0.05});
+
 				}
-				PS.audioPlay("fx_pop", {volume: 0.01});
 				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = Math.max(0, bubbleHealth);
 			}
 			//Check to see if there are any bubbles left
@@ -205,6 +207,20 @@ let BUBBLEWRAP = {
 		this.centerPop(x-1,y+1,1);
 		this.centerPop(x+1,y-1,1);
 		this.centerPop(x+1,y+1,1);
+	},
+
+	callPopSound: function(popStrength, soundPicker){
+		switch(popStrength){
+			case 1:
+				PS.audioPlay("CenterPop" + soundPicker, {path: "audio/", volume: 0.05});
+				break;
+			case 2:
+				PS.audioPlay("MiddlePop" + soundPicker, {path: "audio/", volume: 0.05});
+				break;
+			case 3:
+				PS.audioPlay("OuterPop" + soundPicker, {path: "audio/", volume: 0.05});
+				break;
+		}
 	}
 };
 
@@ -226,7 +242,7 @@ PS.init = function( system, options ) {
 
 	BUBBLEWRAP.makeWrap();
 
-	PS.statusText("Drag to pop!")
+	PS.statusText(0xFFFFFF)
 	// Install additional initialization code
 	// here as needed
 
@@ -406,6 +422,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 				BUBBLEWRAP.colorArrayMarker = 6;
 				BUBBLEWRAP.makeWrap();
 				break;
+
 		}
 
 		BUBBLEWRAP.beadsLeft = true;
