@@ -27,10 +27,6 @@ let CENTER_ID;
 let MIDDLE_ID;
 let OUTER_ID;
 
-//Initial starting positions (not very helpful in the intended design but can prove it works)
-let xPos = 5;
-let yPos = 5;
-
 //Planes of the grid and the popper
 let wrapperPlane = 0;
 let centerPlane = 1;
@@ -47,6 +43,9 @@ let BUBBLEWRAP = {
 	maxWrapDimension: 15,
 	isPopping: false,
 	beadsLeft: true,
+	oneCycleComplete: false,
+	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff],
+	colorArrayMarker: 0,
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
@@ -59,22 +58,18 @@ let BUBBLEWRAP = {
 			BUBBLEWRAP.height = 8;
 		}
 		PS.gridSize( BUBBLEWRAP.length, BUBBLEWRAP.height); // or whatever size you want
-
+		//ඞ
 		BUBBLEWRAP.wrapArray = new Array(BUBBLEWRAP.length*BUBBLEWRAP.height);
 
 		// Create random gray floor (currently inactive for testing purposes)
 		PS.gridPlane(wrapperPlane);
 		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
-				let thickness = PS.random(6);
+				let thickness = PS.random(6)-1;
 				if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height)){
-					PS.color(x,y,150,150,150);
+					PS.color(x,y, this.colorArray[this.colorArrayMarker]);
 					PS.alpha(x,y,this.bubbleOpacityRate*thickness);
 				}
-
-				//let val = (PS.random(32) - 1) + 128;
-				//PS.color(x, y, val, val, val);
-
 				//Change the array part for each element
 				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = thickness;
 			}
@@ -83,7 +78,8 @@ let BUBBLEWRAP = {
 
 		PS.border(PS.ALL,PS.ALL,0);
 		PS.radius(PS.ALL,PS.ALL,30);
-		PS.gridColor(0xcdcdcd);
+		//PS.gridColor(0xFF0000);
+		//PS.bgColor(0,PS.ALL,0xFF0000);
 		PS.gridShadow(true, 0x999999);
 
 		//Make sprite loader here
@@ -126,8 +122,21 @@ let BUBBLEWRAP = {
 				}
 			}
 		}
+		//Play status messages prompting the player to
 		if(!BUBBLEWRAP.beadsLeft){
-			PS.statusText("Press an arrow key to get more bubblewrap!");
+			//oneCycleComplete makes the secret status messages only play after the first one
+			if(BUBBLEWRAP.oneCycleComplete){
+				let secretSignifier = PS.random(10);
+				if(secretSignifier > 8){
+					PS.statusText("Do not press enter for your own good.");
+				} else if(secretSignifier < 3){
+					PS.statusText("Have you tried pressing Z yet?");
+				} else if(secretSignifier >= 3 && secretSignifier < 5){
+					PS.statusText("Nothing important will happen if you press P.")
+				}
+			} else {
+				PS.statusText("Press an arrow key to get more bubblewrap!");
+			}
 		}
 	},
 
@@ -140,7 +149,7 @@ let BUBBLEWRAP = {
 	},
 
 	centerPop: function(x,y, popStrength){
-		if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height)){
+		if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height) && BUBBLEWRAP.beadsLeft){
 			//(x,y,0xFFFFFF);
 			let bubbleStrength = BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x];
 			if(bubbleStrength > 0){
@@ -153,6 +162,7 @@ let BUBBLEWRAP = {
 				} else if(bubbleHealth < 0){
 					PS.statusText("overkill pop!");
 					PS.audioPlay("fx_pop", {volume: 0.05});
+					PS.glyph(x,y, "ඞ");
 					PS.alpha(x,y,0);
 				} else if(bubbleHealth > 0){
 					PS.alpha(x,y,this.bubbleOpacityRate*bubbleHealth);
@@ -182,7 +192,6 @@ let BUBBLEWRAP = {
 		this.centerPop(x-1,y+1,1);
 		this.centerPop(x+1,y-1,1);
 		this.centerPop(x+1,y+1,1);
-
 	}
 };
 
@@ -321,7 +330,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.exitGrid = function( options ) {
-	//BUBBLEWRAP.isPopping = false;
+	BUBBLEWRAP.isPopping = false;
 	// Uncomment the following code line to verify operation:
 
 	// PS.debug( "PS.exitGrid() called\n" );
@@ -342,22 +351,34 @@ This function doesn't have to do anything. Any value returned is ignored.
 PS.keyDown = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
 
+	//Enables secret status messages to play on subsequent loads
+	BUBBLEWRAP.oneCycleComplete = true;
+
 	PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 	if(!BUBBLEWRAP.beadsLeft){
 		switch(key){
 			case PS.KEY_ARROW_UP:
 				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 0;
 				BUBBLEWRAP.makeWrap();
-
-				let screamSignifier = PS.random(10);
-				if(screamSignifier > 8){
-					PS.statusText("Do not press enter for your own good.");
-				} else {
-					PS.statusText("Length: " + BUBBLEWRAP.length + ", Height: " + BUBBLEWRAP.height);
-				}
-
 				break;
+			case PS.KEY_ARROW_DOWN:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 1;
+				BUBBLEWRAP.makeWrap();
+				break;
+			case PS.KEY_ARROW_LEFT:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 2;
+				BUBBLEWRAP.makeWrap();
+				break;
+			case PS.KEY_ARROW_RIGHT:
+				PS.debug("Wrap is regenerated!");
+				BUBBLEWRAP.colorArrayMarker = 3;
+				BUBBLEWRAP.makeWrap();
 		}
+
+		BUBBLEWRAP.beadsLeft = true;
 	}
 
 
