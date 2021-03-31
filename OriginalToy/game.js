@@ -182,6 +182,7 @@ let BUBBLEWRAP = {
 					PS.glyph(x,y, "X");
 					PS.alpha(x,y,0);
 				} else if(bubbleHealth > 0){
+					PS.statusText("Keep popping!");
 
 				}
 				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = Math.max(0, bubbleHealth);
@@ -242,7 +243,7 @@ PS.init = function( system, options ) {
 
 	BUBBLEWRAP.makeWrap();
 
-	PS.statusText(0xFFFFFF)
+	PS.statusText("Drag to pop!");
 	// Install additional initialization code
 	// here as needed
 
