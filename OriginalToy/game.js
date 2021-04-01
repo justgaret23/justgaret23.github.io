@@ -200,9 +200,12 @@ let BUBBLEWRAP = {
 
 	//Move the sprite to wherever the mouse is
 	move: function(x,y){
-		PS.spriteMove(CENTER_ID,x,y);
-		PS.spriteMove(MIDDLE_ID,x,y);
-		PS.spriteMove(OUTER_ID,x,y);
+		if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height) && BUBBLEWRAP.beadsLeft) {
+			PS.spriteMove(CENTER_ID,x,y);
+			PS.spriteMove(MIDDLE_ID,x,y);
+			PS.spriteMove(OUTER_ID,x,y);
+		}
+
 		//PS.audioPlay("fx_click");
 	},
 
