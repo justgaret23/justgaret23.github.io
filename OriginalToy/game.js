@@ -159,6 +159,10 @@ let BUBBLEWRAP = {
 				}
 				*/
 			} else {
+				//Remove all X's
+				PS.glyph(PS.ALL, PS.ALL, "");
+
+				//Give the hint
 				PS.glyph(2,2,"P");
 				PS.glyph(3,2,"R");
 				PS.glyph(4,2,"E");
