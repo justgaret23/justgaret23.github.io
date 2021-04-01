@@ -87,7 +87,7 @@ let BUBBLEWRAP = {
 		//Make them circles and provide unique grid color/shadow
 
 		PS.border(PS.ALL,PS.ALL,0);
-		PS.radius(PS.ALL,PS.ALL,30);
+		PS.radius(PS.ALL,PS.ALL,50);
 		//PS.gridColor(0xFF0000);
 		//PS.bgColor(0,PS.ALL,0xFF0000);
 		PS.gridShadow(true, 0x999999);
