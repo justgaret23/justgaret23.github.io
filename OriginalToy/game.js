@@ -22,8 +22,8 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-let xPos = 5;
-let yPos = 5;
+let xPos = 3;
+let yPos = 3;
 //Loaded sprite ID's
 let CENTER_ID;
 let MIDDLE_ID;
