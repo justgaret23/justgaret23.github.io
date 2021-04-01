@@ -58,6 +58,8 @@ let BUBBLEWRAP = {
 	//7 - black
 	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff, 0x000000],
 	colorArrayMarker: 0,
+	nextColor: 0,
+	wrapChosen: false,
 
 	//makeWrap: creates the wrapper and the bubble popper
 	makeWrap: function(){
@@ -93,6 +95,7 @@ let BUBBLEWRAP = {
 
 		PS.border(PS.ALL,PS.ALL,0);
 		PS.radius(PS.ALL,PS.ALL,50);
+		PS.gridFade(60);
 		PS.gridColor(0xCCCCCC);
 		PS.gridFade(60);
 		PS.bgAlpha(PS.ALL,PS.ALL,255);
@@ -159,6 +162,7 @@ let BUBBLEWRAP = {
 				}
 				*/
 			} else {
+				/*
 				//Remove all X's
 				PS.glyph(PS.ALL, PS.ALL, "");
 
@@ -169,8 +173,27 @@ let BUBBLEWRAP = {
 				PS.glyph(5,2,"S");
 				PS.glyph(6,2,"S");
 				PS.glyph(7,2,"↑");
+				*/
 			}
 			PS.gridColor(0xFFFFFF);
+			//set a random marker
+
+			if(!this.wrapChosen){
+				let newWrap = PS.random(8)-1;
+				//make sure it's always different from the last
+				while(newWrap === BUBBLEWRAP.colorArrayMarker){
+					newWrap = PS.random(8)-1;
+				}
+				BUBBLEWRAP.colorArrayMarker = newWrap;
+
+			} else {
+				BUBBLEWRAP.colorArrayMarker = BUBBLEWRAP.nextColor;
+			}
+
+			BUBBLEWRAP.makeWrap();
+			BUBBLEWRAP.isPopping = false;
+			BUBBLEWRAP.oneCycleComplete = true;
+			BUBBLEWRAP.beadsLeft = true;
 		}
 	},
 
@@ -220,7 +243,7 @@ let BUBBLEWRAP = {
 						BUBBLEWRAP.makeHint(x,y);
 					}
 				} else if(bubbleHealth > 0){
-					PS.statusText("Keep popping!");
+					//PS.statusText("Keep popping!");
 
 				}
 				BUBBLEWRAP.wrapArray[(y*BUBBLEWRAP.length) + x] = Math.max(0, bubbleHealth);
@@ -282,8 +305,6 @@ PS.init = function( system, options ) {
 	// Use only ALPHABETIC characters
 	// No numbers, spaces or punctuation!
 
-	const TEAM = "pix";
-
 	// Begin with essential setup
 	// Establish initial grid size
 
@@ -295,7 +316,7 @@ PS.init = function( system, options ) {
 
 	BUBBLEWRAP.makeWrap();
 
-	PS.statusText("Drag to pop!");
+	//PS.statusText("Drag to pop!");
 	// Install additional initialization code
 	// here as needed
 
@@ -303,16 +324,18 @@ PS.init = function( system, options ) {
 	// of the PS.init() event handler (as shown)
 	// DO NOT MODIFY THIS FUNCTION CALL
 	// except as instructed
-	/*
+
+	const TEAM = "pix";
+
+
 
 	PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
 		if ( user === PS.ERROR ) {
-			return PS.dbErase( TEAM );
+			return;
 		}
 		PS.dbEvent( TEAM, "startup", user );
-		PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
-	}, { active : false } );
-	*/
+		PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
+	}, { active : true } );
 };
 
 /*
@@ -437,48 +460,50 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 
 
 	//PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-	if(!BUBBLEWRAP.beadsLeft){
+	if(BUBBLEWRAP.beadsLeft){
 		switch(key){
 			case PS.KEY_ARROW_UP:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 0;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 0;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_DOWN:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 1;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 1;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_LEFT:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 2;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 2;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_RIGHT:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 3;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 3;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			//Z
 			case 122:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 4;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 4;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			case 120:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 5;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 5;
+				//BUBBLEWRAP.makeWrap();
 				break;
 			case 99:
 				//PS.debug("Wrap is regenerated!");
-				BUBBLEWRAP.colorArrayMarker = 6;
-				BUBBLEWRAP.makeWrap();
+				BUBBLEWRAP.nextColor = 6;
+				//BUBBLEWRAP.makeWrap();
 				break;
 
 		}
-		BUBBLEWRAP.oneCycleComplete = true;
-		BUBBLEWRAP.beadsLeft = true;
+		//PS.statusText("You picked a color!");
+		BUBBLEWRAP.wrapChosen = true;
+		//BUBBLEWRAP.oneCycleComplete = true;
+		//BUBBLEWRAP.beadsLeft = true;
 	}
 
 
