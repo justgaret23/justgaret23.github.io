@@ -91,8 +91,10 @@ let BUBBLEWRAP = {
 
 		PS.border(PS.ALL,PS.ALL,0);
 		PS.radius(PS.ALL,PS.ALL,50);
-		//PS.gridColor(0xFF0000);
-		//PS.bgColor(0,PS.ALL,0xFF0000);
+		PS.gridColor(0xCCCCCC);
+		PS.gridFade(60);
+		PS.bgAlpha(PS.ALL,PS.ALL,255);
+		PS.bgColor(PS.ALL,PS.ALL,0xFDFDFD);
 		PS.gridShadow(true, 0x999999);
 
 		//Make sprite loader here
@@ -161,8 +163,8 @@ let BUBBLEWRAP = {
 				PS.glyph(5,2,"S");
 				PS.glyph(6,2,"S");
 				PS.glyph(7,2,0x02C4);
-
 			}
+			PS.gridColor(0xFFFFFF);
 		}
 	},
 
@@ -428,42 +430,42 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 	//Enables secret status messages to play on subsequent loads
 
 
-	PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
+	//PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 	if(!BUBBLEWRAP.beadsLeft){
 		switch(key){
 			case PS.KEY_ARROW_UP:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 0;
 				BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_DOWN:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 1;
 				BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_LEFT:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 2;
 				BUBBLEWRAP.makeWrap();
 				break;
 			case PS.KEY_ARROW_RIGHT:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 3;
 				BUBBLEWRAP.makeWrap();
 				break;
 			//Z
 			case 122:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 4;
 				BUBBLEWRAP.makeWrap();
 				break;
 			case 120:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 5;
 				BUBBLEWRAP.makeWrap();
 				break;
 			case 99:
-				PS.debug("Wrap is regenerated!");
+				//PS.debug("Wrap is regenerated!");
 				BUBBLEWRAP.colorArrayMarker = 6;
 				BUBBLEWRAP.makeWrap();
 				break;
