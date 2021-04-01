@@ -140,6 +140,7 @@ let BUBBLEWRAP = {
 		if(!BUBBLEWRAP.beadsLeft){
 			//oneCycleComplete makes the secret status messages only play after the first one
 			if(BUBBLEWRAP.oneCycleComplete){
+				/*
 				let secretSignifier = PS.random(10);
 				if(secretSignifier > 8){
 					PS.statusText("Press an arrow key to get more bubblewrap!");
@@ -152,8 +153,15 @@ let BUBBLEWRAP = {
 				} else if(secretSignifier >= 7 && secretSignifier < 9){
 					PS.statusText("Different directions do different things!");
 				}
+				*/
 			} else {
-				PS.statusText("Press an arrow key to get more bubblewrap!");
+				PS.glyph(2,2,"P");
+				PS.glyph(3,2,"R");
+				PS.glyph(4,2,"E");
+				PS.glyph(5,2,"S");
+				PS.glyph(6,2,"S");
+				PS.glyph(7,2,0x02C4);
+
 			}
 		}
 	},
@@ -178,18 +186,31 @@ let BUBBLEWRAP = {
 
 				this.callPopSound(popStrength, soundPicker);
 
+				let hintGiver = false;
+
+				if (PS.random(100) > 98){
+					hintGiver = true;
+				}
+
+
 				//play sound effect depending on game
 				if(bubbleHealth === 0){
 					PS.alpha(x,y,0);
 					PS.border(x,y,2);
 					PS.borderColor(PS.ALL,PS.ALL,this.colorArray[this.colorArrayMarker]);
 					PS.borderAlpha(PS.ALL, PS.ALL, 100);
+					if(hintGiver && this.oneCycleComplete){
+						BUBBLEWRAP.makeHint(x,y);
+					}
 				} else if(bubbleHealth < 0){
 					PS.glyph(x,y, "X");
 					PS.alpha(x,y,0);
 					PS.border(x,y,2);
 					PS.borderColor(PS.ALL,PS.ALL,this.colorArray[this.colorArrayMarker]);
 					PS.borderAlpha(PS.ALL, PS.ALL, 100);
+					if(hintGiver && this.oneCycleComplete){
+						BUBBLEWRAP.makeHint(x,y);
+					}
 				} else if(bubbleHealth > 0){
 					PS.statusText("Keep popping!");
 
@@ -230,6 +251,20 @@ let BUBBLEWRAP = {
 			case 3:
 				PS.audioPlay("OuterPop" + soundPicker, {path: "audio/", volume: 0.05});
 				break;
+		}
+	},
+	makeHint: function(x,y){
+		let secretSignifier = PS.random(10);
+		if(secretSignifier > 8){
+			PS.glyph(x,y,0x02C2);
+		} else if(secretSignifier < 3){
+			PS.glyph(x,y,"Z");
+		} else if(secretSignifier >= 3 && secretSignifier < 5){
+			PS.glyph(x,y,0x02C5);
+		} else if(secretSignifier >= 5 && secretSignifier < 7){
+			PS.glyph(x,y,"C");
+		} else if(secretSignifier >= 7 && secretSignifier < 9) {
+			PS.glyph(x, y, 0x02C3);
 		}
 	}
 };
@@ -391,7 +426,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
 
 	//Enables secret status messages to play on subsequent loads
-	BUBBLEWRAP.oneCycleComplete = true;
+
 
 	PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 	if(!BUBBLEWRAP.beadsLeft){
@@ -434,7 +469,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 				break;
 
 		}
-
+		BUBBLEWRAP.oneCycleComplete = true;
 		BUBBLEWRAP.beadsLeft = true;
 	}
 
