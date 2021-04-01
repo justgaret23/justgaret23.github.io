@@ -168,7 +168,7 @@ let BUBBLEWRAP = {
 				PS.glyph(4,2,"E");
 				PS.glyph(5,2,"S");
 				PS.glyph(6,2,"S");
-				PS.glyph(7,2,0x02C4);
+				PS.glyph(7,2,"↑");
 			}
 			PS.gridColor(0xFFFFFF);
 		}
@@ -196,7 +196,7 @@ let BUBBLEWRAP = {
 
 				let hintGiver = false;
 
-				if (PS.random(100) > 98){
+				if (PS.random(100) > 96){
 					hintGiver = true;
 				}
 
@@ -211,7 +211,7 @@ let BUBBLEWRAP = {
 						BUBBLEWRAP.makeHint(x,y);
 					}
 				} else if(bubbleHealth < 0){
-					PS.glyph(x,y, "X");
+					PS.glyph(x,y, 0x2297);
 					PS.alpha(x,y,0);
 					PS.border(x,y,2);
 					PS.borderColor(PS.ALL,PS.ALL,this.colorArray[this.colorArrayMarker]);
@@ -264,15 +264,15 @@ let BUBBLEWRAP = {
 	makeHint: function(x,y){
 		let secretSignifier = PS.random(10);
 		if(secretSignifier > 8){
-			PS.glyph(x,y,0x02C2);
+			PS.glyph(x,y,"→");
 		} else if(secretSignifier < 3){
 			PS.glyph(x,y,"Z");
 		} else if(secretSignifier >= 3 && secretSignifier < 5){
-			PS.glyph(x,y,0x02C5);
+			PS.glyph(x,y,"←");
 		} else if(secretSignifier >= 5 && secretSignifier < 7){
 			PS.glyph(x,y,"C");
 		} else if(secretSignifier >= 7 && secretSignifier < 9) {
-			PS.glyph(x, y, 0x02C3);
+			PS.glyph(x, y, "↓");
 		}
 	}
 };
