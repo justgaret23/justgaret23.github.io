@@ -75,7 +75,7 @@ let BUBBLEWRAP = {
 		PS.gridPlane(wrapperPlane);
 		for (let y = 0; y < BUBBLEWRAP.height; y += 1) {
 			for (let x = 0; x < BUBBLEWRAP.length; x += 1)  {
-				let thickness = PS.random(6)-1;
+				let thickness = PS.random(4);
 				if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height)){
 					PS.color(x,y, this.colorArray[this.colorArrayMarker]);
 					PS.alpha(x,y,this.bubbleOpacityRate*thickness);
@@ -178,9 +178,13 @@ let BUBBLEWRAP = {
 				//play sound effect depending on game
 				if(bubbleHealth === 0){
 					PS.alpha(x,y,0);
+					PS.border(x,y,2);
+					PS.borderColor(PS.ALL,PS.ALL,this.colorArray[this.colorArrayMarker]);
 				} else if(bubbleHealth < 0){
 					PS.glyph(x,y, "X");
 					PS.alpha(x,y,0);
+					PS.border(x,y,2);
+					PS.borderColor(PS.ALL,PS.ALL,this.colorArray[this.colorArrayMarker]);
 				} else if(bubbleHealth > 0){
 					PS.statusText("Keep popping!");
 
