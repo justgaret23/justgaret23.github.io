@@ -22,6 +22,8 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
+let xPos = 5;
+let yPos = 5;
 //Loaded sprite ID's
 let CENTER_ID;
 let MIDDLE_ID;
@@ -102,21 +104,21 @@ let BUBBLEWRAP = {
 			CENTER_ID = PS.spriteImage(data);
 			PS.spritePlane(CENTER_ID, centerPlane);
 			PS.spriteAxis(CENTER_ID, 2, 2);
-			//PS.spriteMove(CENTER_ID, xPos, yPos);
+			PS.spriteMove(CENTER_ID, xPos, yPos);
 		};
 
 		let middleLoader = function(data){
 			MIDDLE_ID = PS.spriteImage(data);
 			PS.spritePlane(MIDDLE_ID, middlePlane);
 			PS.spriteAxis(MIDDLE_ID, 2, 2);
-			//PS.spriteMove(MIDDLE_ID, xPos, yPos);
+			PS.spriteMove(MIDDLE_ID, xPos, yPos);
 		};
 
 		let outerLoader = function(data){
 			OUTER_ID = PS.spriteImage(data);
 			PS.spritePlane(OUTER_ID, outerPlane);
 			PS.spriteAxis(OUTER_ID, 2, 2);
-			//PS.spriteMove(OUTER_ID, xPos, yPos);
+			PS.spriteMove(OUTER_ID, xPos, yPos);
 		};
 
 		//Actually load image here
