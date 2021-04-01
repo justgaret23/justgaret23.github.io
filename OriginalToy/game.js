@@ -142,7 +142,7 @@ let BUBBLEWRAP = {
 			if(BUBBLEWRAP.oneCycleComplete){
 				let secretSignifier = PS.random(10);
 				if(secretSignifier > 8){
-					PS.statusText("I'll probably make something cheeky later.");
+					PS.statusText("Press an arrow key to get more bubblewrap!");
 				} else if(secretSignifier < 3){
 					PS.statusText("Have you tried pressing Z yet?");
 				} else if(secretSignifier >= 3 && secretSignifier < 5){
