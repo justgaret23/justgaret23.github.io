@@ -191,6 +191,7 @@ let BUBBLEWRAP = {
 			}
 
 			BUBBLEWRAP.makeWrap();
+			BUBBLEWRAP.wrapChosen = false;
 			BUBBLEWRAP.isPopping = false;
 			BUBBLEWRAP.oneCycleComplete = true;
 			BUBBLEWRAP.beadsLeft = true;
@@ -336,6 +337,8 @@ PS.init = function( system, options ) {
 		PS.dbEvent( TEAM, "startup", user );
 		PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
 	}, { active : true } );
+
+
 };
 
 /*
