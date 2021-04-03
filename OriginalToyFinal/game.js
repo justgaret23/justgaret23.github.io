@@ -58,6 +58,7 @@ let BUBBLEWRAP = {
 	//7 - black
 	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff, 0x000000],
 	colorArrayMarker: 0,
+	lastColor: 0,
 	nextColor: 0,
 	wrapChosen: false,
 
@@ -95,12 +96,14 @@ let BUBBLEWRAP = {
 
 		PS.border(PS.ALL,PS.ALL,0);
 		PS.radius(PS.ALL,PS.ALL,50);
+
+		PS.gridColor(this.lastColor);
 		PS.gridFade(60);
-		PS.gridColor(0xCCCCCC);
+		PS.gridColor(BUBBLEWRAP.colorArray[this.colorArrayMarker]);
 		PS.gridFade(60);
 		PS.bgAlpha(PS.ALL,PS.ALL,255);
-		PS.bgColor(PS.ALL,PS.ALL,0xFDFDFD);
-		PS.gridShadow(true, 0x999999);
+		//PS.bgColor(PS.ALL,PS.ALL,0xFDFDFD);
+		PS.gridShadow(true, 0xFFFFFF);
 
 		//Make sprite loader here
 		let centerLoader = function(data){
@@ -143,41 +146,14 @@ let BUBBLEWRAP = {
 			}
 		}
 
-		//Play status messages prompting the player to do stuff
+		//If there are no beads left
 		if(!BUBBLEWRAP.beadsLeft){
-			//oneCycleComplete makes the secret status messages only play after the first one
-			if(BUBBLEWRAP.oneCycleComplete){
-				/*
-				let secretSignifier = PS.random(10);
-				if(secretSignifier > 8){
-					PS.statusText("Press an arrow key to get more bubblewrap!");
-				} else if(secretSignifier < 3){
-					PS.statusText("Have you tried pressing Z yet?");
-				} else if(secretSignifier >= 3 && secretSignifier < 5){
-					PS.statusText("X is a rather unimportant button.");
-				} else if(secretSignifier >= 5 && secretSignifier < 7){
-					PS.statusText("Nothing to C here.");
-				} else if(secretSignifier >= 7 && secretSignifier < 9){
-					PS.statusText("Different directions do different things!");
-				}
-				*/
-			} else {
-				/*
-				//Remove all X's
-				PS.glyph(PS.ALL, PS.ALL, "");
 
-				//Give the hint
-				PS.glyph(2,2,"P");
-				PS.glyph(3,2,"R");
-				PS.glyph(4,2,"E");
-				PS.glyph(5,2,"S");
-				PS.glyph(6,2,"S");
-				PS.glyph(7,2,"↑");
-				*/
-			}
-			PS.gridColor(0xFFFFFF);
 			//set a random marker
+			this.lastColor = BUBBLEWRAP.colorArray[this.colorArrayMarker];
 
+			//If the player didn't manually pick a bubblewrap, randomly select a new one that is not the previous wrap
+				//Otherwise, honor the player's requests
 			if(!this.wrapChosen){
 				let newWrap = PS.random(8)-1;
 				//make sure it's always different from the last
@@ -185,16 +161,19 @@ let BUBBLEWRAP = {
 					newWrap = PS.random(8)-1;
 				}
 				BUBBLEWRAP.colorArrayMarker = newWrap;
+				PS.gridColor(BUBBLEWRAP.colorArray[this.colorArrayMarker]);
 
 			} else {
 				BUBBLEWRAP.colorArrayMarker = BUBBLEWRAP.nextColor;
 			}
 
-			BUBBLEWRAP.makeWrap();
+			//Make the new wrap and reset variables accordingly
 			BUBBLEWRAP.wrapChosen = false;
 			BUBBLEWRAP.isPopping = false;
 			BUBBLEWRAP.oneCycleComplete = true;
 			BUBBLEWRAP.beadsLeft = true;
+			BUBBLEWRAP.makeWrap();
+
 		}
 	},
 
@@ -329,6 +308,7 @@ PS.init = function( system, options ) {
 	// DO NOT MODIFY THIS FUNCTION CALL
 	// except as instructed
 
+	/*
 	const TEAM = "pix";
 
 
@@ -340,6 +320,8 @@ PS.init = function( system, options ) {
 		PS.dbEvent( TEAM, "startup", user );
 		PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
 	}, { active : true } );
+
+	 */
 
 
 };
@@ -506,6 +488,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 				break;
 
 		}
+		PS.gridColor(BUBBLEWRAP.colorArray[BUBBLEWRAP.nextColor]);
 		//PS.statusText("You picked a color!");
 		BUBBLEWRAP.wrapChosen = true;
 		//BUBBLEWRAP.oneCycleComplete = true;
