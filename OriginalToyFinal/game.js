@@ -56,7 +56,7 @@ let BUBBLEWRAP = {
 	//5 - magenta
 	//6 - cyan
 	//7 - black
-	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff, 0x000000],
+	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff],
 	colorArrayMarker: 0,
 	lastColor: 0,
 	nextColor: 0,
