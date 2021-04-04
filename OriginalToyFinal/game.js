@@ -22,21 +22,6 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-let xPos = 3;
-let yPos = 3;
-//Loaded sprite ID's
-let CENTER_ID;
-let MIDDLE_ID;
-let OUTER_ID;
-
-let isLoaded = false;
-
-//Planes of the grid and the popper
-let wrapperPlane = 0;
-let centerPlane = 1;
-let middlePlane = 2;
-let outerPlane = 3;
-
 let G = ( function (){
 	//Bubblewrap globals
 	let BUBBLEWRAP = {
@@ -50,6 +35,9 @@ let G = ( function (){
 		isPopping: false, //Determines whether the player is popping bubbles
 		beadsLeft: true, //Determines whether there are bubbles yet to be popped
 		oneCycleComplete: false, //Determines if a cycle has been completed. Allows for some helpful procedures.
+		borderSizeCenter: 10,
+		borderSizeMid: 7,
+		borderSizeOut: 5,
 
 		//Array colors:
 		//0 - grey
@@ -65,36 +53,10 @@ let G = ( function (){
 		nextColor: 0, //The next color that will be picked
 		wrapChosen: false, //Indicates whether the player chose a wrap
 
-		//makeWrap: creates the wrapper and the bubble popper
+		/**
+		 * Initializes the bubblewrap depending on a variety of factors
+		 */
 		makeWrap: function(){
-			/*
-            //Make sprite loader here
-            let centerLoader = function(data){
-                CENTER_ID = PS.spriteImage(data);
-                PS.spritePlane(CENTER_ID, centerPlane);
-                PS.spriteAxis(CENTER_ID, 2, 2);
-                //PS.spriteMove(CENTER_ID, xPos, yPos);
-            };
-            let middleLoader = function(data){
-                MIDDLE_ID = PS.spriteImage(data);
-                PS.spritePlane(MIDDLE_ID, middlePlane);
-                PS.spriteAxis(MIDDLE_ID, 2, 2);
-                //PS.spriteMove(MIDDLE_ID, xPos, yPos);
-            };
-            let outerLoader = function(data){
-                OUTER_ID = PS.spriteImage(data);
-                PS.spritePlane(OUTER_ID, outerPlane);
-                PS.spriteAxis(OUTER_ID, 2, 2);
-                //PS.spriteMove(OUTER_ID, xPos, yPos);
-            };
-            //Actually load image here
-            PS.imageLoad("images/center.png", centerLoader);
-            PS.imageLoad("images/middle.png", middleLoader);
-            PS.imageLoad("images/outer.png", outerLoader);
-            isLoaded = true;
-             */
-
-
 			//Check if the bubble wrap has exceeded the max dimensions
 			if(this.length < this.maxWrapDimension && this.height < this.maxWrapDimension){
 				//If not, increase height and length randomly
@@ -134,10 +96,16 @@ let G = ( function (){
 			PS.radius(PS.ALL,PS.ALL,50);
 
 			//Fade between colors
-			PS.gridColor(this.lastColor);
-			PS.gridFade(60);
+			if(!this.wrapChosen){
+				PS.gridColor(this.lastColor);
+				PS.gridFade(60);
+
+			}
 			PS.gridColor(this.colorArray[this.colorArrayMarker]);
 			PS.gridFade(60);
+
+			//Make the new wrap and reset variables accordingly
+			this.wrapChosen = false;
 
 			//Make the background opaque and reset color
 			PS.bgAlpha(PS.ALL,PS.ALL,255);
@@ -149,7 +117,9 @@ let G = ( function (){
 
 		},
 
-		//check to see if the wrap has any beads left. Take action if no beads remain.
+		/**
+		 * check to see if the wrap has any beads left. Take action if no beads remain.
+		 */
 		checkWrap: function(){
 			//Assume there are no beads left, and try to disprove this assertion.
 			this.beadsLeft = false;
@@ -189,9 +159,6 @@ let G = ( function (){
 				//Set the border color equal to the color chosen
 				PS.borderColor(PS.ALL,PS.ALL, this.colorArray[this.colorArrayMarker]);
 
-				//Make the new wrap and reset variables accordingly
-				this.wrapChosen = false;
-
 				this.oneCycleComplete = true;
 				this.beadsLeft = true;
 				this.makeWrap();
@@ -199,47 +166,54 @@ let G = ( function (){
 			}
 		},
 
+		/**
+		 * A greater function that handles moving onto a bead for the entire set of cursor beads
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		//Move the sprite to wherever the mouse is
 		moveOn: function(x,y){
-			//if((x >= 0) && (y >= 0) && (x < BUBBLEWRAP.length) && (y < BUBBLEWRAP.height) && BUBBLEWRAP.beadsLeft) {
-			/*
-            PS.spriteMove(CENTER_ID,x,y);
-            PS.spriteMove(MIDDLE_ID,x,y);
-            PS.spriteMove(OUTER_ID,x,y);
-             */
+
+			//Run this function on several beads at once with different border sizes and strengths
 
 			//Enable borders for the dragged sprite
-			this.moveOnCheck(x,y,10);
+			this.moveOnCheck(x,y,this.borderSizeCenter);
 
 			//layer 2
-			this.moveOnCheck(x-1,y,7);
-			this.moveOnCheck(x-1,y-1,7);
-			this.moveOnCheck(x-1,y+1,7);
-			this.moveOnCheck(x,y-1,7);
-			this.moveOnCheck(x,y+1,7);
-			this.moveOnCheck(x+1,y-1,7);
-			this.moveOnCheck(x+1,y,7);
-			this.moveOnCheck(x+1,y+1,7);
+			this.moveOnCheck(x-1,y,this.borderSizeMid);
+			this.moveOnCheck(x-1,y-1,this.borderSizeMid);
+			this.moveOnCheck(x-1,y+1,this.borderSizeMid);
+			this.moveOnCheck(x,y-1,this.borderSizeMid);
+			this.moveOnCheck(x,y+1,this.borderSizeMid);
+			this.moveOnCheck(x+1,y-1,this.borderSizeMid);
+			this.moveOnCheck(x+1,y,this.borderSizeMid);
+			this.moveOnCheck(x+1,y+1,this.borderSizeMid);
 
 			//layer 3
-			this.moveOnCheck(x-2,y-1,5);
-			this.moveOnCheck(x-2,y,5);
-			this.moveOnCheck(x-2,y+1,5);
-			this.moveOnCheck(x-1,y+2,5);
-			this.moveOnCheck(x-1,y-2,5);
-			this.moveOnCheck(x,y+2,5);
-			this.moveOnCheck(x,y-2,5);
-			this.moveOnCheck(x+1,y+2,5);
-			this.moveOnCheck(x+1,y-2,5);
-			this.moveOnCheck(x+2,y-1,5);
-			this.moveOnCheck(x+2,y,5);
-			this.moveOnCheck(x+2,y+1,5);
+			this.moveOnCheck(x-2,y-1,this.borderSizeOut);
+			this.moveOnCheck(x-2,y,this.borderSizeOut);
+			this.moveOnCheck(x-2,y+1,this.borderSizeOut);
+			this.moveOnCheck(x-1,y+2,this.borderSizeOut);
+			this.moveOnCheck(x-1,y-2,this.borderSizeOut);
+			this.moveOnCheck(x,y+2,this.borderSizeOut);
+			this.moveOnCheck(x,y-2,this.borderSizeOut);
+			this.moveOnCheck(x+1,y+2,this.borderSizeOut);
+			this.moveOnCheck(x+1,y-2,this.borderSizeOut);
+			this.moveOnCheck(x+2,y-1,this.borderSizeOut);
+			this.moveOnCheck(x+2,y,this.borderSizeOut);
+			this.moveOnCheck(x+2,y+1,this.borderSizeOut);
 
 			//}
 
 			//PS.audioPlay("fx_click");
 		},
 
+		/**
+		 * A function that checks an individual bead to give it signifying borders when the mouse is moved on
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 * @param borderSize - The size of the border that will be displayed on the bead
+		 */
 		moveOnCheck: function(x,y,borderSize){
 			//Check for borders, if there are beads left, and if the bead is still not popped
 			if((x >= 0) && (y >= 0) && (x < this.length) && (y < this.height) && this.beadsLeft && PS.alpha(x,y) > 0) {
@@ -250,6 +224,11 @@ let G = ( function (){
 			}
 		},
 
+		/**
+		 * A greater function that handles moving off of a bead for the entire set of cursor beads
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		moveOff: function(x,y){
 			if((x >= 0) && (y >= 0) && (x < this.length) && (y < this.height) && this.beadsLeft) {
 				//Enable borders for the dragged sprite
@@ -281,14 +260,25 @@ let G = ( function (){
 			}
 		},
 
+		/**
+		 * A function that checks an individual bead to make sure it loses its border when the mouse moves off of it
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		moveOffCheck: function(x,y){
+			//Check for bounds. If the check is satisfied, remove the border
 			if((x >= 0) && (y >= 0) && (x < this.length) && (y < this.height) && this.beadsLeft && PS.alpha(x,y) > 0) {
-
 				PS.border(x,y,0);
 			}
 
 		},
 
+		/**
+		 * The main popping function. This pops a bead depending on the strength of the pop.
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 * @param popStrength - The strength of a pop. This varies for different beads on the cursor
+		 */
 		centerPop: function(x,y, popStrength){
 
 			//check bounds
@@ -341,6 +331,11 @@ let G = ( function (){
 			}
 		},
 
+		/**
+		 * A function that collects all pops on the second layer of the cursor
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		middlePop: function(x,y){
 			//layer 2
 			this.centerPop(x-1,y,2);
@@ -353,6 +348,11 @@ let G = ( function (){
 			this.centerPop(x+1,y+1,2);
 		},
 
+		/**
+		 * A function that collects all pops on the third layer of the cursor
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		outerPop: function(x,y){
 			//layer 3
 			this.centerPop(x-2,y-1,1);
@@ -370,6 +370,11 @@ let G = ( function (){
 
 		},
 
+		/**
+		 * A function that handles the audio for the pop noises
+		 * @param popStrength - Strength of the pop. This alters which sound is played
+		 * @param soundPicker - A randomizer that diversifies the sounds played on pop
+		 */
 		callPopSound: function(popStrength, soundPicker){
 			switch(popStrength){
 				case 1:
@@ -383,6 +388,12 @@ let G = ( function (){
 					break;
 			}
 		},
+
+		/**
+		 * A function that randomly drops secret glyphs that hint at the game's keyboard commands
+		 * @param x - The x parameter of the bead
+		 * @param y - The y parameter of the bead
+		 */
 		makeHint: function(x,y){
 			let secretSignifier = PS.random(10);
 			if(secretSignifier > 8){
@@ -398,6 +409,8 @@ let G = ( function (){
 			}
 		}
 	};
+
+	//Perlenspiel's main functions
 	return{
 		init: function(){
 			BUBBLEWRAP.makeWrap();
@@ -423,9 +436,11 @@ let G = ( function (){
 			BUBBLEWRAP.centerPop(x,y,3);
 			BUBBLEWRAP.middlePop(x,y);
 			BUBBLEWRAP.outerPop(x,y);
+			BUBBLEWRAP.moveOn(x,y);
 		},
 		release: function(x,y){
 			BUBBLEWRAP.isPopping = false;
+			BUBBLEWRAP.moveOn(x,y);
 		},
 		enter: function(x,y){
 			//Move on
@@ -436,6 +451,7 @@ let G = ( function (){
 				BUBBLEWRAP.centerPop(x,y,3);
 				BUBBLEWRAP.middlePop(x,y);
 				BUBBLEWRAP.outerPop(x,y);
+				BUBBLEWRAP.moveOn(x,y);
 			}
 		},
 		exit: function(x,y){
