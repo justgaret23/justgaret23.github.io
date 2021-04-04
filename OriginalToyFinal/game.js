@@ -331,7 +331,7 @@ let BUBBLEWRAP = {
 						BUBBLEWRAP.makeHint(x,y);
 					}
 					if(bubbleHealth < 0){
-						PS.glyph(x,y, 0x2297);
+						//PS.glyph(x,y, 0x2297);
 					}
 				} else if(bubbleHealth > 0){
 					//PS.statusText("Keep popping!");
