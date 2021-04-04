@@ -67,7 +67,6 @@ let G = ( function (){
 
 		//makeWrap: creates the wrapper and the bubble popper
 		makeWrap: function(){
-
 			/*
             //Make sprite loader here
             let centerLoader = function(data){
@@ -335,6 +334,7 @@ let G = ( function (){
 
 					}
 					this.wrapArray[(y*this.length) + x] = Math.max(0, bubbleHealth);
+
 				}
 				//Check to see if there are any bubbles left
 				this.checkWrap();
