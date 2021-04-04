@@ -58,8 +58,7 @@ let BUBBLEWRAP = {
 	//4 - yellow
 	//5 - magenta
 	//6 - cyan
-	//7 - black
-	colorArray: [0x969696, 0xff7a7a, 0x59ff67, 0x5e7eff, 0xffff00, 0xff42ff, 0x47ffff],
+	colorArray: [0x969696, 0xff7a7a, 0x00ba10, 0x5e7eff, 0xccc931, 0xff42ff, 0x00b8b8],
 	colorArrayMarker: 0, //Marks where to grab data in the array
 	lastColor: 0, //The last color that was picked
 	nextColor: 0, //The next color that will be picked
