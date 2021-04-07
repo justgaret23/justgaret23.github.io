@@ -23,6 +23,8 @@ Any value returned is ignored.
 */
 
 let G = ( function (){
+
+	let canPop = true;
 	//Bubblewrap globals
 	let BUBBLEWRAP = {
 		//Initial length and height of board
@@ -57,6 +59,9 @@ let G = ( function (){
 		 * Initializes the bubblewrap depending on a variety of factors
 		 */
 		makeWrap: function(){
+			canPop = false;
+			this.isPopping = false;
+
 			//Check if the bubble wrap has exceeded the max dimensions
 			if(this.length < this.maxWrapDimension && this.height < this.maxWrapDimension){
 				//If not, increase height and length randomly
@@ -69,6 +74,17 @@ let G = ( function (){
 			}
 			//Initialize the grid with the new length and height
 			PS.gridSize( this.length, this.height);
+			//Remove borders and set radius to max
+
+			//Make them circles and provide unique grid color/shadow
+			PS.border(PS.ALL,PS.ALL,0);
+			PS.radius(PS.ALL,PS.ALL,50);
+
+			//Make the background opaque and reset color
+			PS.bgAlpha(PS.ALL,PS.ALL,255);
+			PS.bgColor(PS.ALL,PS.ALL,0xFDFDFD);
+
+			//I'm still drawing on the old wrap
 
 			//Initialize the array of bubbles
 			this.wrapArray = new Array(this.length*this.height);
@@ -89,17 +105,11 @@ let G = ( function (){
 					this.wrapArray[(y*this.length) + x] = thickness;
 				}
 			}
-			//Make them circles and provide unique grid color/shadow
-
-			//Remove borders and set radius to max
-			PS.border(PS.ALL,PS.ALL,0);
-			PS.radius(PS.ALL,PS.ALL,50);
 
 			//Fade between colors
 			if(!this.wrapChosen){
 				PS.gridColor(this.lastColor);
 				PS.gridFade(60);
-
 			}
 			PS.gridColor(this.colorArray[this.colorArrayMarker]);
 			PS.gridFade(60);
@@ -107,14 +117,10 @@ let G = ( function (){
 			//Make the new wrap and reset variables accordingly
 			this.wrapChosen = false;
 
-			//Make the background opaque and reset color
-			PS.bgAlpha(PS.ALL,PS.ALL,255);
-			PS.bgColor(PS.ALL,PS.ALL,0xFDFDFD);
-
 			//Set grid shadow to white
 			PS.gridShadow(true, 0xFFFFFF);
 
-
+			canPop = true;
 		},
 
 		/**
@@ -135,8 +141,11 @@ let G = ( function (){
 			//If there are no beads left
 			if(!this.beadsLeft){
 
-				//You can no longer pop.
+				//Disable popping
+				canPop = false;
 				this.isPopping = false;
+
+				//
 
 				//Save the last color
 				this.lastColor = this.colorArray[this.colorArrayMarker];
@@ -161,7 +170,13 @@ let G = ( function (){
 
 				this.oneCycleComplete = true;
 				this.beadsLeft = true;
+
+				//The wrap is created
 				this.makeWrap();
+
+				canPop = true;
+
+				//
 
 			}
 		},
@@ -291,7 +306,7 @@ let G = ( function (){
 					//Randomly assign a pop noise using rand
 					let soundPicker = PS.random(3);
 
-					this.callPopSound(popStrength, soundPicker);
+
 
 					let hintGiver = false;
 
@@ -303,6 +318,8 @@ let G = ( function (){
 					//play sound effect depending on game
 					//If you make an exact pop
 					if(bubbleHealth <= 0){
+						//amplify sound
+						this.callPopSound(Math.min(3, popStrength+1), soundPicker);
 						PS.fade(x,y,30);
 						PS.color(x,y,0xFFFFFF);
 						PS.fade(x,y,30);
@@ -315,10 +332,8 @@ let G = ( function (){
 						if(hintGiver && this.oneCycleComplete){
 							this.makeHint(x,y);
 						}
-						if(bubbleHealth < 0){
-							//PS.glyph(x,y, 0x2297);
-						}
 					} else if(bubbleHealth > 0){
+						this.callPopSound(popStrength, soundPicker);
 						//PS.statusText("Keep popping!");
 						PS.border(x,y,0);
 
@@ -326,8 +341,6 @@ let G = ( function (){
 					this.wrapArray[(y*this.length) + x] = Math.max(0, bubbleHealth);
 
 				}
-				//Check to see if there are any bubbles left
-				this.checkWrap();
 			}
 		},
 
@@ -378,13 +391,13 @@ let G = ( function (){
 		callPopSound: function(popStrength, soundPicker){
 			switch(popStrength){
 				case 1:
-					PS.audioPlay("CenterPop" + soundPicker, {path: "audio/", volume: 0.3});
+					PS.audioPlay("OuterPop" + soundPicker, {path: "audio/", volume: 0.3});
 					break;
 				case 2:
 					PS.audioPlay("MiddlePop" + soundPicker, {path: "audio/", volume: 0.3});
 					break;
 				case 3:
-					PS.audioPlay("OuterPop" + soundPicker, {path: "audio/", volume: 0.3});
+					PS.audioPlay("CenterPop" + soundPicker, {path: "audio/", volume: 0.3});
 					break;
 			}
 		},
@@ -413,6 +426,7 @@ let G = ( function (){
 	//Perlenspiel's main functions
 	return{
 		init: function(){
+			PS.statusText("Bubble Wrap Simulator");
 			BUBBLEWRAP.makeWrap();
 
 			// PS.dbLogin() must be called at the END
@@ -432,17 +446,29 @@ let G = ( function (){
              */
 		},
 		touch: function(x,y){
+			if(!canPop){
+				return;
+			}
 			BUBBLEWRAP.isPopping = true;
 			BUBBLEWRAP.centerPop(x,y,3);
 			BUBBLEWRAP.middlePop(x,y);
 			BUBBLEWRAP.outerPop(x,y);
 			BUBBLEWRAP.moveOn(x,y);
+
+			//Check to see if there are any bubbles left
+			BUBBLEWRAP.checkWrap();
 		},
 		release: function(x,y){
+			if(!canPop){
+				return;
+			}
 			BUBBLEWRAP.isPopping = false;
 			BUBBLEWRAP.moveOn(x,y);
 		},
 		enter: function(x,y){
+			if(!canPop){
+				return;
+			}
 			//Move on
 			BUBBLEWRAP.moveOn(x,y);
 
@@ -452,9 +478,15 @@ let G = ( function (){
 				BUBBLEWRAP.middlePop(x,y);
 				BUBBLEWRAP.outerPop(x,y);
 				BUBBLEWRAP.moveOn(x,y);
+
+				//Check to see if there are any bubbles left
+				BUBBLEWRAP.checkWrap();
 			}
 		},
 		exit: function(x,y){
+			if(!canPop){
+				return;
+			}
 			// Uncomment the following code line to inspect x/y parameters:
 			BUBBLEWRAP.moveOff(x,y);
 			if(PS.alpha(x,y) > 0){
@@ -462,46 +494,45 @@ let G = ( function (){
 			}
 		},
 		exitGrid: function(){
+			if(!canPop){
+				return;
+			}
 			BUBBLEWRAP.isPopping = false;
 		},
 		keyDown: function(key){
+			if(!canPop){
+				return;
+			}
 			if(BUBBLEWRAP.beadsLeft){
 				switch(key){
 					case PS.KEY_ARROW_UP:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 0;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					case PS.KEY_ARROW_DOWN:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 1;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					case PS.KEY_ARROW_LEFT:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 2;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					case PS.KEY_ARROW_RIGHT:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 3;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					//Z
 					case 122:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 4;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					case 120:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 5;
-						//BUBBLEWRAP.makeWrap();
 						break;
 					case 99:
 						//PS.debug("Wrap is regenerated!");
 						BUBBLEWRAP.nextColor = 6;
-						//BUBBLEWRAP.makeWrap();
 						break;
 
 				}
