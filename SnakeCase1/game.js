@@ -260,7 +260,7 @@ let G = (function (){
 				PS.spriteMove(snakeSprite, snakeX, snakeY);
 			};
 
-			PS.imageLoad("images/demo.bmp", onMapLoad, 1);
+			PS.imageLoad("images/demo.gif", onMapLoad, 1);
 			/*
 			PS.gridSize( gridSizeX, gridSizeY); // or whatever size you want
 			//PS.gridColor(BACKGROUND_COLOR);
