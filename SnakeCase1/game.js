@@ -16,39 +16,275 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 let G = (function (){
 	let gridSizeX = 8;
 	let gridSizeY = 8;
-	let backgroundColor = 0xAAAAAA;
-	let UIColor = 0x777777;
-	let snakeColor = 0x6CBB3C;
-	let poleColor = 0x784a00;
-	let goalColor = 0xffee33;
-	let snakeLength = 3;
+	let moveCounter = 0;
 
+	let MAP_BACKGROUND;
+
+
+	let BACKGROUND_COLOR = 0xAAAAAA;
+	let UI_COLOR = 0x777777;
 	let UIPosition = gridSizeY-1;
+
+	let BACKGROUND_PLANE = 0;
+
+
+	//What objects will be on the game screen?
+	//UI
+	//Snake
+	//Start
+	//Goal
+	//Powerups
+	//Poles
+	//Obstacles
+
+
+	let SNAKE_PLANE = 4;
+	let SNAKE_COLOR = 0x6CBB3C;
+	let snakeLength = 3;
+	let snakeSprite;
+	let snakeX;
+	let snakeY;
+	let snakePosition;
+
+	let POLE_COLOR = 0x784a00;
+	let POLE_PLANE = 1;
+	let POLE_MARKER = "pole";
+
+	let START_COLOR = PS.COLOR_YELLOW;
+	let START_PLANE = 2;
+	let START_MARKER = "start";
+
+	let GOAL_COLOR = 0xffee33;
+	let GOAL_PLANE = 2;
+	let GOAL_MARKER = "goal";
+
+	let POWERUP_COLOR = PS.COLOR_BLUE;
+	let POWERUP_PLANE = 3;
+	let POWERUP_MARKER = "powerup";
+
+	let OBSTACLE_COLOR = PS.COLOR_BLACK;
+	let OBSTACLE_PLANE = 5;
+	let OBSTACLE_MARKER = "obstacle";
+
+
+	let timer_id;
+	let mapdata;
+
+	let imagemap = {
+		width: 0,
+		height: 0,
+		pixelSize: 1,
+		data: []
+	};
+
+	/**
+	 * Figures out where to place the start of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placeStart = function(x,y){
+		//Set up the grid plane
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(START_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,START_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,START_MARKER);
+
+		//Define starting coordinates of snake
+		snakeX = x;
+		snakeY = y;
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+	}
+
+	/**
+	 * Figures out where to place the goal of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placeGoal = function(x,y){
+		//Set up the grid plane
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(START_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,GOAL_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,GOAL_MARKER);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+	}
+
+	/**
+	 * Figures out where to place the goal of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placePole = function(x,y){
+		//Set up the grid plane
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(POLE_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,POLE_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,POLE_MARKER);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+	}
+
+	/**
+	 * Figures out where to place the power ups of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placePowerup = function(x,y){
+		//Set up the grid plane
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(POWERUP_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,POWERUP_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,POWERUP_MARKER);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+	}
+
+	/**
+	 * Figures out where to place the power ups of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placeObstacle = function(x,y){
+		//Set up the grid plane
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(OBSTACLE_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,OBSTACLE_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,OBSTACLE_MARKER);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+	}
+
+	let snakeInitPlace = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane
+	}
+
+	let moveSnake = function(x,y){
+		//erase the previous line
+
+
+	}
+
+	let releaseSnake = function(x,y){
+
+	}
+
+
+
+
+
+
+
+
 
 	//Perlenspiel's event handlers
 	return{
 		init: function(){
+
+			let onMapLoad = function(image){
+				if(image === PS.ERROR){
+					PS.debug( "onMapLoad(): image load error\n" );
+					return;
+				}
+
+				//save map data for later
+				mapdata = image;
+
+				imagemap.width = GRID_LENGTH = image.width;
+				imagemap.height = GRID_HEIGHT = image.height;
+
+				PS.gridSize( GRID_X, GRID_Y );
+				PS.border( PS.ALL, PS.ALL, 0 );
+
+				let i = 0;
+				for(let y = 0; y < GRID_HEIGHT; y += 1){
+					for(let x = 0; x < GRID_LENGTH; x += 1){
+						let data = MAP_BACKGROUND;
+						let pixel = image.data[i];
+						switch(pixel){
+							case BACKGROUND_COLOR:
+								break;
+							case START_COLOR:
+								placeStart(x,y);
+								break;
+							case GOAL_COLOR:
+								placeGoal(x,y);
+								break;
+							case POWERUP_COLOR:
+								placePowerup(x,y);
+								break;
+							case POLE_COLOR:
+								placePole(x,y);
+								break;
+							case OBSTACLE_COLOR:
+								placeObstacle(x,y);
+								break;
+							case UI_COLOR:
+								PS.border(x,y, {top: 5});
+								break;
+							default:
+								PS.debug( "onMapLoad(): unrecognized pixel value\n" );
+								break;
+						}
+						imagemap.data[i] = data;
+						i += 1;
+					}
+				}
+
+				//Create and move snake sprite to appropriate plane and location
+				snakeSprite = PS.spriteSolid(1,1);
+				PS.solidSpriteColor(snakeSprite, SNAKE_COLOR);
+				PS.spritePlane(snakeSprite, SNAKE_PLANE);
+				PS.spriteMove(snakeSprite, snakeX, snakeY);
+			};
+
+			PS.imageLoad("images/demo.bmp", onMapLoad, 1);
+			/*
 			PS.gridSize( gridSizeX, gridSizeY); // or whatever size you want
-			//PS.gridColor(backgroundColor);
+			//PS.gridColor(BACKGROUND_COLOR);
 
 			//Color background appropriately
 			for(let i=0; i < UIPosition; i++){
-				PS.color(PS.ALL, i, backgroundColor);
+				PS.color(PS.ALL, i, BACKGROUND_COLOR);
 			}
 			//Color UI bar
-			PS.color(PS.ALL, UIPosition, UIColor);
+			PS.color(PS.ALL, UIPosition, UI_COLOR);
 
 			for(let i = 0; i < snakeLength; i++){
-				PS.color(gridSizeX-(i+1), UIPosition, snakeColor);
+				PS.color(gridSizeX-(i+1), UIPosition, SNAKE_COLOR);
 			}
 
-			PS.color(2,5,snakeColor);
-			PS.color(5,4,poleColor);
-			PS.color(4,1,goalColor);
+			PS.color(2,5,SNAKE_COLOR);
+			PS.color(5,4,POLE_COLOR);
+			PS.color(4,1,GOAL_COLOR);
 
 			//Remove borders initially
 			PS.border(PS.ALL, PS.ALL, 0);
 			PS.border(PS.ALL, UIPosition, {top: 10});
+
+			 */
 
 
 
