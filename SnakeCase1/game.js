@@ -1,34 +1,7 @@
 /*
-game.js for Perlenspiel 3.3.xd
-Last revision: 2021-04-08 (BM)
+game.js for Perlenspiel 3.3.x
+Last revision: 2021-03-24 (BM)
 
-Perlenspiel is a scheme by Professor Moriarty (bmoriarty@wpi.edu).
-This version of Perlenspiel (3.3.x) is hosted at <https://ps3.perlenspiel.net>
-Perlenspiel is Copyright © 2009-21 Brian Moriarty.
-This file is part of the standard Perlenspiel 3.3.x devkit distribution.
-
-Perlenspiel is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Perlenspiel is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Lesser General Public License for more details.
-
-You may have received a copy of the GNU Lesser General Public License
-along with the Perlenspiel devkit. If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/*
-This JavaScript file is a template for creating new Perlenspiel 3.3.x games.
-Add code to the event handlers required by your project.
-Any unused event-handling function templates can be safely deleted.
-Refer to the tutorials and documentation at <https://ps3.perlenspiel.net> for details.
-*/
-
-/*
 The following comment lines are for JSHint <https://jshint.com>, a tool for monitoring code quality.
 You may find them useful if your development environment is configured to support JSHint.
 If you don't use JSHint (or are using it with a configuration file), you can safely delete these lines.
@@ -38,6 +11,98 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 /* globals PS : true */
 
 "use strict"; // Do NOT delete this directive!
+
+//Larger gameobject - IIFE
+let G = (function (){
+	let gridSizeX = 8;
+	let gridSizeY = 8;
+	let backgroundColor = 0xAAAAAA;
+	let UIColor = 0x777777;
+	let snakeColor = 0x6CBB3C;
+	let poleColor = 0x784a00;
+	let goalColor = 0xffee33;
+	let snakeLength = 3;
+
+	let UIPosition = gridSizeY-1;
+
+	//Perlenspiel's event handlers
+	return{
+		init: function(){
+			PS.gridSize( gridSizeX, gridSizeY); // or whatever size you want
+			//PS.gridColor(backgroundColor);
+
+			//Color background appropriately
+			for(let i=0; i < UIPosition; i++){
+				PS.color(PS.ALL, i, backgroundColor);
+			}
+			//Color UI bar
+			PS.color(PS.ALL, UIPosition, UIColor);
+
+			for(let i = 0; i < snakeLength; i++){
+				PS.color(gridSizeX-(i+1), UIPosition, snakeColor);
+			}
+
+			PS.color(2,5,snakeColor);
+			PS.color(5,4,poleColor);
+			PS.color(4,1,goalColor);
+
+			//Remove borders initially
+			PS.border(PS.ALL, PS.ALL, 0);
+			PS.border(PS.ALL, UIPosition, {top: 10});
+
+
+
+
+			// Install additional initialization code
+			// here as needed
+
+			// PS.dbLogin() must be called at the END
+			// of the PS.init() event handler (as shown)
+			// DO NOT MODIFY THIS FUNCTION CALL
+			// except as instructed
+
+			/*
+			const TEAM = "teamname";
+
+			// This code should be the last thing
+			// called by your PS.init() handler.
+			// DO NOT MODIFY IT, except for the change
+			// explained in the comment below.
+
+			PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
+				if ( user === PS.ERROR ) {
+					return;
+				}
+				PS.dbEvent( TEAM, "startup", user );
+				PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
+			}, { active : false } );
+
+			 */
+
+			// Change the false in the final line above to true
+			// before deploying the code to your Web site.
+		},
+		touch: function(x,y){
+
+		},
+		release: function(x,y){
+
+		},
+		enter: function(x,y){
+
+		},
+		exit: function(x,y){
+
+		},
+		exitGrid: function(){
+
+		},
+		keyDown: function(key){
+
+		}
+
+	};
+} () );
 
 /*
 PS.init( system, options )
@@ -49,56 +114,7 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.init = function( system, options ) {
-	// Uncomment the following code line
-	// to verify operation:
-
-	// PS.debug( "PS.init() called\n" );
-
-	// This function should normally begin
-	// with a call to PS.gridSize( x, y )
-	// where x and y are the desired initial
-	// dimensions of the grid.
-	// Call PS.gridSize() FIRST to avoid problems!
-	// The sample call below sets the grid to the
-	// default dimensions (8 x 8).
-	// Uncomment the following code line and change
-	// the x and y parameters as needed.
-
-	// PS.gridSize( 8, 8 );
-
-	// This is also a good place to display
-	// your game title or a welcome message
-	// in the status line above the grid.
-	// Uncomment the following code line and
-	// change the string parameter as needed.
-
-	// PS.statusText( "Game" );
-
-	// Add any other initialization code you need here.
-
-	// Change this TEAM constant to your team name,
-	// using ONLY alphabetic characters (a-z).
-	// No numbers, spaces, punctuation or special characters!
-
-	const TEAM = "teamname";
-
-	// This code should be the last thing
-	// called by your PS.init() handler.
-	// DO NOT MODIFY IT, except for the change
-	// explained in the comment below.
-
-	PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
-		if ( user === PS.ERROR ) {
-			return;
-		}
-		PS.dbEvent( TEAM, "startup", user );
-		PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
-	}, { active : false } );
-	
-	// Change the false in the final line above to true
-	// before deploying the code to your Web site.
-};
+PS.init = G.init;
 
 /*
 PS.touch ( x, y, data, options )
@@ -110,15 +126,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.touch = function( x, y, data, options ) {
-	// Uncomment the following code line
-	// to inspect x/y parameters:
-
-	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
-
-	// Add code here for mouse clicks/touches
-	// over a bead.
-};
+PS.touch = G.touch;
 
 /*
 PS.release ( x, y, data, options )
@@ -130,13 +138,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.release = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.release() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse button/touch is released over a bead.
-};
+PS.release = G.release;
 
 /*
 PS.enter ( x, y, button, data, options )
@@ -148,13 +150,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.enter = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.enter() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch enters a bead.
-};
+PS.enter = G.enter;
 
 /*
 PS.exit ( x, y, data, options )
@@ -166,13 +162,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.exit = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.exit() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch exits a bead.
-};
+PS.exit = G.exit;
 
 /*
 PS.exitGrid ( options )
@@ -181,13 +171,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.exitGrid = function( options ) {
-	// Uncomment the following code line to verify operation:
-
-	// PS.debug( "PS.exitGrid() called\n" );
-
-	// Add code here for when the mouse cursor/touch moves off the grid.
-};
+PS.exitGrid = G.exitGrid;
 
 /*
 PS.keyDown ( key, shift, ctrl, options )
@@ -199,13 +183,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.keyDown = function( key, shift, ctrl, options ) {
-	// Uncomment the following code line to inspect first three parameters:
-
-	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-
-	// Add code here for when a key is pressed.
-};
+PS.keyDown = G.keyDown;
 
 /*
 PS.keyUp ( key, shift, ctrl, options )
