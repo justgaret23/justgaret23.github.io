@@ -17,54 +17,56 @@ let G = (function (){
 	let gridSizeX = 8;
 	let gridSizeY = 8;
 	let moveCounter = 0;
+	let levelIndex = 1;
+
+	let tick = 30;
+	let running = true;
 
 	let MAP_BACKGROUND;
+	let BACKGROUND_COLOR = 0xAAAAAA; //background color
+	let BACKGROUND_PLANE = 0; //background plane
 
-
-	let BACKGROUND_COLOR = 0xAAAAAA;
 	let UI_COLOR = 0x777777;
 	let UIPosition = gridSizeY-1;
 
-	let BACKGROUND_PLANE = 0;
+	//Define snake constants here
+	let SNAKE_PLANE = 4; //plane
+	let SNAKE_COLOR = 0x6CBB3C; //color
+	let SNAKE_INIT_LENGTH = 3;
+	let snakeLength = SNAKE_INIT_LENGTH; //length of snake
+	let snakeDistance = 0;
+	let snakeSprite; //snake sprite global id
+	let snakeX; //x coordinate of snake origin
+	let snakeY; //y coordinate of snake origin
+	let snakePivotX;
+	let snakePivotY;
+	let canMoveSnake = false; //boolean that determines if you can move snake or not
+	let isPivoting = false;
+	let snakeLine = []; //line array
+	let pivotLine = [];
+	let allSnakeLines = []; //line array of all lines
 
+	let POLE_COLOR = 0x784a00; //color
+	let POLE_PLANE = 1; //plane
+	let POLE_MARKER = "pole"; //marker for PS.data
 
-	//What objects will be on the game screen?
-	//UI
-	//Snake
-	//Start
-	//Goal
-	//Powerups
-	//Poles
-	//Obstacles
+	let START_COLOR = PS.COLOR_YELLOW; //color
+	let START_PLANE = 2; //plane
+	let START_MARKER = "start"; //marker for PS.data
 
+	let GOAL_COLOR = 0xffee33; //color
+	let GOAL_PLANE = 2; //plane
+	let GOAL_MARKER = "goal"; //marker for PS.data
 
-	let SNAKE_PLANE = 4;
-	let SNAKE_COLOR = 0x6CBB3C;
-	let snakeLength = 3;
-	let snakeSprite;
-	let snakeX;
-	let snakeY;
-	let snakePosition;
+	let POWERUP_COLOR = PS.COLOR_BLUE; //color
+	let POWERUP_PLANE = 3; //plane
+	let POWERUP_MARKER = "powerup"; //marker for PS.data
 
-	let POLE_COLOR = 0x784a00;
-	let POLE_PLANE = 1;
-	let POLE_MARKER = "pole";
+	let OBSTACLE_COLOR = PS.COLOR_BLACK; //color
+	let OBSTACLE_PLANE = 5; //plane
+	let OBSTACLE_MARKER = "obstacle"; //marker for PS.data
 
-	let START_COLOR = PS.COLOR_YELLOW;
-	let START_PLANE = 2;
-	let START_MARKER = "start";
-
-	let GOAL_COLOR = 0xffee33;
-	let GOAL_PLANE = 2;
-	let GOAL_MARKER = "goal";
-
-	let POWERUP_COLOR = PS.COLOR_BLUE;
-	let POWERUP_PLANE = 3;
-	let POWERUP_MARKER = "powerup";
-
-	let OBSTACLE_COLOR = PS.COLOR_BLACK;
-	let OBSTACLE_PLANE = 5;
-	let OBSTACLE_MARKER = "obstacle";
+	let SNAKE_UI_PLANE = 6;
 
 
 	let timer_id;
@@ -76,6 +78,59 @@ let G = (function (){
 		pixelSize: 1,
 		data: []
 	};
+
+	let updateUI = function(snakeLength){
+		//Reset UI Grid
+		//let oPlane = PS.gridPlane();
+		PS.color(PS.ALL, UIPosition, UI_COLOR);
+		//PS.gridPlane(SNAKE_UI_PLANE);
+		for(let i = 0; i < snakeLength; i++){
+			PS.color(gridSizeX - (i+1), UIPosition, SNAKE_COLOR);
+		}
+		//PS.gridPlane(oPlane);
+	}
+
+	/**
+	 * load the next level
+	 * @param levelIndex
+	 */
+	let loadLevel = function(levelIndex){
+		PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
+	}
+
+	let deleteSnakePart = function(snakePart){
+
+		//PS.color(snakeLine[snakePart][0], snakeLine[snakePart][1], BACKGROUND_COLOR);
+
+
+
+
+		for(let i=0; i < snakeLine.length; i++){
+			PS.color(snakeLine[i][0], snakeLine[i][1], BACKGROUND_COLOR);
+		}
+		if(allSnakeLines.length === 1){
+
+		}
+
+
+
+
+
+
+		/*else {
+			for(let j=0; j < allSnakeLines.length; j++){
+				let deleteSnakePart = allSnakeLines[i];
+				for(let i=0; i < snakeLine.length; i++){
+					PS.color(deleteSnakePart[i][0], deleteSnakePart[i][1], BACKGROUND_COLOR);
+				}
+			}
+		}
+
+		 */
+
+
+
+	}
 
 	/**
 	 * Figures out where to place the start of the level
@@ -157,6 +212,17 @@ let G = (function (){
 		PS.gridPlane(oPlane);
 	}
 
+	let deletePowerup = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(POWERUP_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,BACKGROUND_COLOR);
+		PS.data(x,y,"no");
+
+		PS.gridPlane(oPlane);
+	}
+
 	/**
 	 * Figures out where to place the power ups of the level
 	 * @param x - x position
@@ -176,117 +242,248 @@ let G = (function (){
 		PS.gridPlane(oPlane);
 	}
 
-	let snakeInitPlace = function(x,y){
+	/**
+	 * Figures out where to place the background of the level
+	 * @param x - x position
+	 * @param y - y position
+	 */
+	let placeBackground = function(x,y){
 		let oPlane = PS.gridPlane();
-		PS.gridPlane
+		PS.gridPlane(BACKGROUND_PLANE);
+
+
+		//Define attributes of start
+		PS.color(x,y,BACKGROUND_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.fade(x, y, 30);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
 	}
 
+	let placeUI = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(OBSTACLE_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y,UI_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.border(x,y, {top: 5});
+		updateUI(snakeLength);
+
+		//reset gridplane
+		PS.gridPlane(oPlane);
+
+	}
+
+	/**
+	 * Reset the snake's position
+	 */
+	let resetSnake = function(data){
+		PS.spriteMove(snakeSprite, snakeX, snakeY);
+		deleteSnakePart(snakeLine.length);
+		snakeLine = [];
+		pivotLine = [];
+		snakeDistance = 0;
+		updateUI(snakeLength);
+		isPivoting = false;
+		canMoveSnake = false;
+	}
+
+	/**
+	 * Check to see if the line overlaps with an obstacle. If it does, forcibly reset the snake
+	 * @param snakeLine
+	 */
+	let checkObstacleOverlap = function(snakeLine){
+		let isOverlapping = false;
+		for(let i=0; i < snakeLine.length; i++){
+			//Check to see if a line part overlaps with an obstacle. If it does, reset
+			if(PS.data(snakeLine[i][0], snakeLine[i][1]) === OBSTACLE_MARKER){
+				PS.spriteMove(snakeSprite, snakeX, snakeY);
+				isOverlapping = true;
+			}
+		}
+		if(isOverlapping){
+			resetSnake();
+			resetSnake();
+		}
+	}
+
+	let dupeCheck = function(pivotPoint){
+		for(let i=0; i < snakeLine.length; i++){
+			if(pivotPoint[0] === snakeLine[i][0] && pivotPoint[1] === snakeLine[i][1]){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * move the snake to a desired place and check for boundary conditions
+	 * @param x - current x location of snake
+	 * @param y - current y location of snake
+	 */
 	let moveSnake = function(x,y){
-		//erase the previous line
+		if(canMoveSnake){
+			let data = PS.data(x,y);
+			let oplane = PS.gridPlane();
+			if(!isPivoting){
+				//Assign data as a grabbable variable and make a new line
 
+				snakeLine = PS.line(snakeX, snakeY, x, y);
+
+				//PS.debug(snakeLine);
+			} else if(isPivoting){
+
+
+				//pivotSnake(x,y);
+				let pivotPoint = [x,y];
+
+				if(dupeCheck(pivotPoint)){
+					resetSnake();
+				} else {
+					snakeLine.push(pivotPoint);
+				}
+				//pivotLine = PS.line(snakePivotX, snakePivotY, x, y);
+			}
+
+			checkObstacleOverlap(snakeLine);
+
+			//Reset if you move onto an obstacle marker
+			if(data === OBSTACLE_MARKER){
+				PS.audioPlay("fx_bucket");
+				resetSnake();
+				return;
+			}
+
+			//Check to make sure length isn't being exceeded
+			if(snakeDistance <= snakeLength){
+				PS.spriteMove(snakeSprite,x,y);
+
+
+				if(dupeCheck(snakeLine) === true){
+					resetSnake();
+				}
+
+
+
+
+				snakeDistance = snakeLine.length + pivotLine.length;
+				updateUI(snakeLength-snakeDistance);
+				if(snakeLength - snakeDistance < 0){
+					resetSnake();
+				}
+			} else {
+				resetSnake();
+				return;
+			}
+
+			//Increase the snake's length if you enter a powerup
+			if(data === POWERUP_MARKER){
+				snakeLength += 1;
+				deletePowerup(x,y);
+				PS.audioPlay("fx_powerup1");
+			}
+
+			//PS.debug(snakeLine[0]);
+
+			PS.gridPlane(BACKGROUND_PLANE);
+
+			//Color in the line area
+			for(let i=0; i < snakeLine.length; i++){
+				PS.color(snakeLine[i][0], snakeLine[i][1], SNAKE_COLOR);
+			}
+
+
+
+			//Auto-reset snake if it travels into the UI
+			if(y === UIPosition){
+				resetSnake();
+			}
+		}
 
 	}
 
-	let releaseSnake = function(x,y){
-
+	let pivotSnake = function(x,y){
+		//Save the last line so we can delete it later
+		allSnakeLines.push(snakeLine);
+		snakePivotX = x;
+		snakePivotY = y;
 	}
 
+	let onMapLoad = function(image){
+		if(image === PS.ERROR){
+			PS.debug( "onMapLoad(): image load error\n" );
+			return;
+		}
+
+		//Timer
+		//throttle - should i run this tick or not?
+		//timer_id = PS.timerStart(tick, deleteSnakePart());
 
 
+		//save map data for later
+		mapdata = image;
 
+		imagemap.width = gridSizeX = image.width;
+		imagemap.height = gridSizeY = image.height;
 
+		UIPosition = gridSizeY-1;
 
+		PS.gridSize( gridSizeX, gridSizeY );
+		PS.border( PS.ALL, PS.ALL, 0 );
+
+		let i = 0;
+		for(let y = 0; y < gridSizeY; y += 1){
+			for(let x = 0; x < gridSizeX; x += 1){
+				let data = MAP_BACKGROUND;
+				let pixel = image.data[i];
+				switch(pixel){
+					case BACKGROUND_COLOR:
+						placeBackground(x,y);
+						break;
+					case START_COLOR:
+						placeStart(x,y);
+						break;
+					case GOAL_COLOR:
+						placeGoal(x,y);
+						break;
+					case POWERUP_COLOR:
+						placePowerup(x,y);
+						break;
+					case POLE_COLOR:
+						placePole(x,y);
+						break;
+					case OBSTACLE_COLOR:
+						placeObstacle(x,y);
+						break;
+					case UI_COLOR:
+						//placeUI(x,y);
+
+						break;
+					default:
+						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
+						break;
+				}
+				imagemap.data[i] = data;
+				i += 1;
+			}
+		}
+
+		//Create and move snake sprite to appropriate plane and location
+		snakeSprite = PS.spriteSolid(1,1);
+		PS.spriteSolidColor(snakeSprite, SNAKE_COLOR);
+		PS.spritePlane(snakeSprite, SNAKE_PLANE);
+		PS.spriteMove(snakeSprite, snakeX, snakeY);
+	};
 
 
 
 	//Perlenspiel's event handlers
 	return{
 		init: function(){
-
-			let onMapLoad = function(image){
-				if(image === PS.ERROR){
-					PS.debug( "onMapLoad(): image load error\n" );
-					return;
-				}
-
-				//save map data for later
-				mapdata = image;
-
-				imagemap.width = GRID_LENGTH = image.width;
-				imagemap.height = GRID_HEIGHT = image.height;
-
-				PS.gridSize( GRID_X, GRID_Y );
-				PS.border( PS.ALL, PS.ALL, 0 );
-
-				let i = 0;
-				for(let y = 0; y < GRID_HEIGHT; y += 1){
-					for(let x = 0; x < GRID_LENGTH; x += 1){
-						let data = MAP_BACKGROUND;
-						let pixel = image.data[i];
-						switch(pixel){
-							case BACKGROUND_COLOR:
-								break;
-							case START_COLOR:
-								placeStart(x,y);
-								break;
-							case GOAL_COLOR:
-								placeGoal(x,y);
-								break;
-							case POWERUP_COLOR:
-								placePowerup(x,y);
-								break;
-							case POLE_COLOR:
-								placePole(x,y);
-								break;
-							case OBSTACLE_COLOR:
-								placeObstacle(x,y);
-								break;
-							case UI_COLOR:
-								PS.border(x,y, {top: 5});
-								break;
-							default:
-								PS.debug( "onMapLoad(): unrecognized pixel value\n" );
-								break;
-						}
-						imagemap.data[i] = data;
-						i += 1;
-					}
-				}
-
-				//Create and move snake sprite to appropriate plane and location
-				snakeSprite = PS.spriteSolid(1,1);
-				PS.solidSpriteColor(snakeSprite, SNAKE_COLOR);
-				PS.spritePlane(snakeSprite, SNAKE_PLANE);
-				PS.spriteMove(snakeSprite, snakeX, snakeY);
-			};
-
-			PS.imageLoad("images/demo.gif", onMapLoad, 1);
-			/*
-			PS.gridSize( gridSizeX, gridSizeY); // or whatever size you want
-			//PS.gridColor(BACKGROUND_COLOR);
-
-			//Color background appropriately
-			for(let i=0; i < UIPosition; i++){
-				PS.color(PS.ALL, i, BACKGROUND_COLOR);
-			}
-			//Color UI bar
-			PS.color(PS.ALL, UIPosition, UI_COLOR);
-
-			for(let i = 0; i < snakeLength; i++){
-				PS.color(gridSizeX-(i+1), UIPosition, SNAKE_COLOR);
-			}
-
-			PS.color(2,5,SNAKE_COLOR);
-			PS.color(5,4,POLE_COLOR);
-			PS.color(4,1,GOAL_COLOR);
-
-			//Remove borders initially
-			PS.border(PS.ALL, PS.ALL, 0);
-			PS.border(PS.ALL, UIPosition, {top: 10});
-
-			 */
-
-
+			PS.imageLoad("images/tutorial1.gif", onMapLoad, 1);
+			updateUI(snakeLength);
 
 
 			// Install additional initialization code
@@ -319,22 +516,71 @@ let G = (function (){
 			// before deploying the code to your Web site.
 		},
 		touch: function(x,y){
-
+			//If you click on the snake, you can move it
+			if(x === snakeX && y === snakeY){
+				canMoveSnake = true;
+				PS.audioPlay("fx_pop");
+			}
 		},
 		release: function(x,y){
+			//If you release the snake, it resets back to the original position
+			let data = PS.data(x,y);
+			if(canMoveSnake){
+				switch(data){
+					case POLE_MARKER:
+					case START_MARKER:
+						snakeX = x;
+						snakeY = y;
+						PS.audioPlay("fx_click");
+						break;
+					case GOAL_MARKER:
+						levelIndex += 1;
+						loadLevel(levelIndex);
+						break;
+					default:
+						PS.audioPlay("fx_bucket");
+						break;
+
+				}
+
+				resetSnake();
+			}
 
 		},
 		enter: function(x,y){
-
+			moveSnake(x,y);
 		},
 		exit: function(x,y){
-
+			//Erase in the line area
+			if(canMoveSnake) {
+				deleteSnakePart();
+			} else {
+				resetSnake();
+			}
 		},
 		exitGrid: function(){
+			resetSnake();
+			isPivoting = false;
 
 		},
 		keyDown: function(key){
-
+			switch(key){
+				//Z
+				case 122:
+					PS.statusText("Pivoting...");
+					isPivoting = true;
+					break;
+			}
+		},
+		keyUp: function(key){
+			switch(key){
+				//Z
+				case 122:
+					PS.statusText("Stopping pivot");
+					isPivoting = false;
+					resetSnake();
+					break;
+			}
 		}
 
 	};
@@ -431,13 +677,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.keyUp = function( key, shift, ctrl, options ) {
-	// Uncomment the following code line to inspect first three parameters:
-
-	// PS.debug( "PS.keyUp(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-
-	// Add code here for when a key is released.
-};
+PS.keyUp = G.keyUp;
 
 /*
 PS.input ( sensors, options )
