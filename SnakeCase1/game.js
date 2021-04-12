@@ -380,7 +380,7 @@ let G = (function (){
 
 			//Reset if you move onto an obstacle marker
 			if(data === OBSTACLE_MARKER){
-				PS.audioPlay("snakeGrab", {path: "audio/", volume: 0.3});
+				PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
 				resetSnake();
 				return;
 			}
