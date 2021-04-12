@@ -100,6 +100,15 @@ let G = (function (){
 	 * @param levelIndex
 	 */
 	let loadLevel = function(levelIndex){
+
+		switch(levelIndex){
+			case 1:
+				PS.statusText("Drag the snake onto other pixels to move it!");
+				break;
+			case 6:
+				PS.statusText("Press Z while dragging to pivot!");
+
+		}
 		if(levelIndex > 6){
 			gameCompleted = true;
 			PS.statusText("You found a new home!");
@@ -411,6 +420,7 @@ let G = (function (){
 				snakeLength += 1;
 				deletePowerup(x,y);
 				PS.audioPlay("fx_powerup1", {volume: 0.1});
+				PS.statusText("Your max length has increased!");
 			}
 
 			PS.gridPlane(BACKGROUND_PLANE);
@@ -503,6 +513,7 @@ let G = (function (){
 	return{
 		init: function(){
 			PS.imageLoad("images/tutorial1.gif", onMapLoad, 1);
+			PS.statusText("Drag the snake onto other pixels to move it!");
 			updateUI(snakeLength);
 
 
@@ -588,7 +599,12 @@ let G = (function (){
 			switch(key){
 				//Z
 				case 122:
-					PS.statusText("Pivoting...");
+					if(levelIndex === 6){
+						PS.statusText("You can move in any direction while pivoting!");
+					} else {
+						PS.statusText("Pivoting...");
+					}
+
 					isPivoting = true;
 					break;
 				case PS.KEY_ARROW_UP:
@@ -600,7 +616,7 @@ let G = (function (){
 			switch(key){
 				//Z
 				case 122:
-					PS.statusText("Stopping pivot");
+					PS.statusText("Pivot has stopped.");
 					resetSnake();
 					break;
 			}
