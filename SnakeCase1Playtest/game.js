@@ -111,7 +111,7 @@ let G = (function (){
 		}
 		if(levelIndex > 6){
 			gameCompleted = true;
-			PS.statusText("You found a new home!");
+			PS.statusText("You found a new home! Game ends here.");
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
 			//PS.imageLoad("images/newHome.gif", onMapLoad);
 		} else {
