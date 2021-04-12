@@ -102,7 +102,9 @@ let G = (function (){
 	let loadLevel = function(levelIndex){
 		if(levelIndex > 6){
 			gameCompleted = true;
-			PS.imageLoad("images/newHome.gif", onMapLoad);
+			PS.statusText("You found a new home!");
+			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
+			//PS.imageLoad("images/newHome.gif", onMapLoad);
 		} else {
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
 		}
@@ -593,6 +595,9 @@ let G = (function (){
 				case 122:
 					PS.statusText("Pivoting...");
 					isPivoting = true;
+					break;
+				case PS.KEY_ARROW_UP:
+					PS.imageLoad("images/newHome.gif", onMapLoad);
 					break;
 			}
 		},
