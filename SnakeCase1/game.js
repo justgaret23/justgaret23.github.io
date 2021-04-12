@@ -110,28 +110,11 @@ let G = (function (){
 		}
 	}
 
-	let deleteSnakePart = function(snakePart){
-
+	let redrawSnakeLine = function(){
 		//PS.color(snakeLine[snakePart][0], snakeLine[snakePart][1], BACKGROUND_COLOR);
 		for(let i=0; i < snakeLine.length; i++){
 			PS.color(snakeLine[i][0], snakeLine[i][1], BACKGROUND_COLOR);
 		}
-		if(allSnakeLines.length === 1){
-
-		}
-		/*else {
-			for(let j=0; j < allSnakeLines.length; j++){
-				let deleteSnakePart = allSnakeLines[i];
-				for(let i=0; i < snakeLine.length; i++){
-					PS.color(deleteSnakePart[i][0], deleteSnakePart[i][1], BACKGROUND_COLOR);
-				}
-			}
-		}
-
-		 */
-
-
-
 	}
 
 	/**
@@ -139,6 +122,18 @@ let G = (function (){
 	 * @param snakeLine - line to be deleted
 	 */
 	let deleteSnakeLine = function(snakeLine){
+		for(let i = snakeLine.length-1; i >= 0; i-= 1){
+			PS.color(snakeLine[i][0], snakeLine[i][1], BACKGROUND_COLOR);
+			PS.spriteMove(snakeSprite, snakeLine[i][0], snakeLine[i][1]);
+		}
+		PS.spriteMove(snakeSprite, snakeX, snakeY);
+	}
+
+	/**
+	 * delete the snake line upon release to be more accurate
+	 * @param snakeLine - line to be deleted
+	 */
+	let deleteSnakePart = function(snakeLine){
 		for(let i = snakeLine.length-1; i >= 0; i-= 1){
 			PS.color(snakeLine[i][0], snakeLine[i][1], BACKGROUND_COLOR);
 			PS.spriteMove(snakeSprite, snakeLine[i][0], snakeLine[i][1]);
@@ -441,7 +436,7 @@ let G = (function (){
 
 		//Timer
 		//throttle - should i run this tick or not?
-		//timer_id = PS.timerStart(tick, deleteSnakePart());
+		//timer_id = PS.timerStart(tick, redrawSnakeLine());
 
 		//save map data for later
 		mapdata = image;
@@ -566,7 +561,7 @@ let G = (function (){
 						loadLevel(levelIndex);
 						break;
 					default:
-						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						PS.audioPlay("SnakeRelease", {path: "audio/", volume: 0.3});
 						break;
 
 				}
@@ -581,7 +576,7 @@ let G = (function (){
 		exit: function(x,y){
 			//Erase in the line area
 			if(canMoveSnake) {
-				deleteSnakePart();
+				redrawSnakeLine();
 			} else {
 				resetSnake();
 			}
