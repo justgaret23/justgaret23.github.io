@@ -440,7 +440,7 @@ let G = (function (){
 		//Timer
 		//throttle - should i run this tick or not?
 		//timer_id = PS.timerStart(tick, deleteSnakePart());
-		
+
 		//save map data for later
 		mapdata = image;
 
@@ -564,7 +564,7 @@ let G = (function (){
 						loadLevel(levelIndex);
 						break;
 					default:
-						PS.audioPlay("snakeGrab", {path: "audio/", volume: 0.3});
+						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
 						break;
 
 				}
