@@ -526,7 +526,7 @@ let G = (function (){
 			// except as instructed
 
 			/*
-			const TEAM = "teamname";
+			const TEAM = "pix";
 
 			// This code should be the last thing
 			// called by your PS.init() handler.
