@@ -108,7 +108,7 @@ let G = (function (){
 				PS.statusText("Drag the snake onto other pixels to move it!");
 				break;
 			case 6:
-				PS.statusText("Press Z while dragging to pivot!");
+				PS.statusText("Click on an empty space to pivot!");
 
 		}
 		if(levelIndex > 8){
@@ -187,7 +187,8 @@ let G = (function (){
 
 		//Define attributes of start
 		PS.color(x,y,GOAL_MAP_COLOR);
-		PS.glyph(x,y,"⚑");
+		PS.glyph(x,y,"2");
+		//PS.glyph(x,y,"⚑");
 		PS.alpha(x,y,PS.ALPHA_OPAQUE);
 		PS.data(x,y,GOAL_MARKER);
 
@@ -322,6 +323,7 @@ let G = (function (){
 		pivotLine = [];
 		snakeDistance = 0;
 		updateUI(snakeLength);
+		moveCounter += 1;
 		isPivoting = false;
 		canMoveSnake = false;
 	}
