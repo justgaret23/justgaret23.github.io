@@ -548,13 +548,68 @@ let G = (function (){
 		},
 		touch: function(x,y){
 			//If you click on the snake, you can move it
-			if(x === snakeX && y === snakeY){
+			let data = PS.data(x,y);
+			if(x === snakeX && y === snakeY && !canMoveSnake){
 				canMoveSnake = true;
 				PS.audioPlay("snakeStep1", {path: "audio/", volume: 0.3});
 			}
+			//If the player clicks again on an empty space, pivot
+			if(canMoveSnake){
+				let endDecider = PS.random(3) + 9;
+				switch(data){
+					case POLE_MARKER:
+					case START_MARKER:
+						snakeX = x;
+						snakeY = y;
+						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						deleteSnakeLine(snakeLine);
+						if(isPivoting){
+							snakeLine = [];
+						}
+						updateUI(snakeLength);
+						// resetSnake();
+						break;
+					case GOAL_MARKER:
+						levelIndex += 1;
+
+						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						resetSnake();
+						loadLevel(levelIndex);
+						break;
+					default:
+						if(levelIndex === 6){
+							PS.statusText("You can move in any direction while pivoting!");
+						} else {
+							PS.statusText("Pivoting...");
+						}
+
+						isPivoting = true;
+						break;
+
+				}
+			}
+			/*
+			if(canMoveSnake && (data === POLE_MARKER || data === START_MARKER)){
+				snakeX = x;
+				snakeY = y;
+				PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+				resetSnake();
+			}
+
+			if(canMoveSnake && data === GOAL_MARKER){
+				levelIndex += 1;
+				PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+				loadLevel(levelIndex);
+				resetSnake();
+			}
+			//If the player clicks again on a non-empty space, pivot
+			if(canMoveSnake)
+
+			 */
 		},
 		release: function(x,y){
-			//If you release the snake, it resets back to the original position
+			//If you release the snake, it resets back to the original
+			/*
 			let data = PS.data(x,y);
 			if(canMoveSnake){
 				let endDecider = PS.random(3) + 9;
@@ -580,6 +635,8 @@ let G = (function (){
 				resetSnake();
 			}
 
+			 */
+
 		},
 		enter: function(x,y){
 			moveSnake(x,y);
@@ -599,6 +656,7 @@ let G = (function (){
 			switch(key){
 				//Z
 				case 122:
+
 					if(levelIndex === 6){
 						PS.statusText("You can move in any direction while pivoting!");
 					} else {
@@ -608,7 +666,8 @@ let G = (function (){
 					isPivoting = true;
 					break;
 				case PS.KEY_ARROW_UP:
-					PS.imageLoad("images/newHome.gif", onMapLoad);
+					PS.statusText("Line was cancelled.");
+					resetSnake();
 					break;
 			}
 		},
