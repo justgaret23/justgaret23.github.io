@@ -657,8 +657,6 @@ let G = (function (){
 			PS.statusText("Drag the snake onto other pixels to move it!");
 			updateUI(snakeLength);
 
-			PS.debug("first try idiot");
-
 
 			// Install additional initialization code
 			// here as needed
