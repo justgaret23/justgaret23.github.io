@@ -40,13 +40,20 @@ let G = (function (){
 	let SNAKE_INIT_LENGTH = 4;
 	let snakeLength = SNAKE_INIT_LENGTH; //length of snake
 	let snakeDistance = 0;
+	let SNAKE_EYE = 0x0298;
+	let SNAKE_BONK = "⨂";
 	let snakeSprite; //snake sprite global id
 	let snakeX; //x coordinate of snake origin
 	let snakeY; //y coordinate of snake origin
+	let currX;
+	let currY;
 	let canMoveSnake = false; //boolean that determines if you can move snake or not
 	let isPivoting = false;
 	let snakeLine = []; //line array
 	let pivotLine = [];
+
+	let doorX;
+	let doorY;
 
 	let POLE_MAP_COLOR = 0x784a00; //color
 	let POLE_COLOR = 0x312404;
@@ -73,6 +80,17 @@ let G = (function (){
 	let OBSTACLE_PLANE = 5; //plane
 	let OBSTACLE_MARKER = "obstacle"; //marker for PS.data
 
+	let KEY_MAP_COLOR = PS.COLOR_RED;
+	let KEY_COLOR = PS.COLOR_RED;
+	//use powerup plane
+	let KEY_MARKER = "key";
+
+	let DOOR_MAP_COLOR = 0xFF00FF;
+	let DOOR_COLOR = PS.COLOR_RED;
+	//use powerup plane
+	let LOCKED_MARKER = "locked";
+	let UNLOCKED_MARKER = "unlocked"
+
 	let SNAKE_UI_PLANE = 6;
 
 
@@ -88,13 +106,28 @@ let G = (function (){
 
 	let updateUI = function(snakeLength){
 		//Reset UI Grid
-		//let oPlane = PS.gridPlane();
+		let oPlane = PS.gridPlane();
+		if(moveCounter < 100){
+			let tensDigit = Math.floor(moveCounter/10);
+			let onesDigit = moveCounter % 10;
+
+			PS.gridPlane(OBSTACLE_PLANE);
+
+			PS.glyph(0, UIPosition, tensDigit.toString());
+			PS.glyph(1, UIPosition, onesDigit.toString());
+		} else {
+			PS.glyph(0, UIPosition, "9");
+			PS.glyph(1, UIPosition, "9");
+		}
+
+
 		PS.color(PS.ALL, UIPosition, UI_COLOR);
-		//PS.gridPlane(SNAKE_UI_PLANE);
+
 		for(let i = 0; i < snakeLength; i++){
 			PS.color(gridSizeX - (i+1), UIPosition, SNAKE_MAP_COLOR);
+			PS.border(gridSizeX - (i+1), UIPosition, {left: 5});
 		}
-		//PS.gridPlane(oPlane);
+		PS.gridPlane(oPlane);
 	}
 
 	/**
@@ -111,7 +144,7 @@ let G = (function (){
 				PS.statusText("Click on an empty space to pivot!");
 
 		}
-		if(levelIndex > 8){
+		if(levelIndex > 12){
 			gameCompleted = true;
 			PS.statusText("You found a new home!");
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
@@ -187,8 +220,7 @@ let G = (function (){
 
 		//Define attributes of start
 		PS.color(x,y,GOAL_MAP_COLOR);
-		PS.glyph(x,y,"2");
-		//PS.glyph(x,y,"⚑");
+		PS.glyph(x,y,"⚑");
 		PS.alpha(x,y,PS.ALPHA_OPAQUE);
 		PS.data(x,y,GOAL_MARKER);
 
@@ -241,7 +273,25 @@ let G = (function (){
 		//Define attributes of start
 		PS.color(x,y,BACKGROUND_COLOR);
 		PS.data(x,y,"no");
+		PS.fade(x,y,30);
 
+		PS.gridPlane(oPlane);
+		PS.fade(x,y,30);
+	}
+
+	let unlockDoor = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(BACKGROUND_PLANE);
+
+		PS.data(x,y,UNLOCKED_MARKER);
+
+		PS.color(x,y,BACKGROUND_COLOR);
+		PS.fade(x,y,30);
+
+		PS.gridPlane(OBSTACLE_PLANE);
+		PS.alpha(x,y,0);
+
+		//reset gridplane
 		PS.gridPlane(oPlane);
 	}
 
@@ -250,12 +300,42 @@ let G = (function (){
 		PS.gridPlane(BACKGROUND_PLANE);
 
 		//Define attributes of start
-		//PS.glyph(x, y, "Z");
 		PS.color(x,y, BACKGROUND_COLOR);
 		PS.border(x,y,3);
 		PS.data(x,y,HINT_MARKER);
 		PS.fade(x,y,30);
 
+		PS.gridPlane(oPlane);
+	}
+
+	let placeKey = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(POWERUP_PLANE);
+
+		//Define attributes of start
+		PS.color(x,y, KEY_COLOR);
+		PS.alpha(x,y,128);
+		PS.data(x,y,KEY_MARKER);
+
+		PS.gridPlane(oPlane);
+	}
+
+	let placeDoor = function(x,y){
+		let oPlane = PS.gridPlane();
+		PS.gridPlane(BACKGROUND_PLANE);
+
+		//Initialize door coordinates so we can change its status later on
+		doorX = x;
+		doorY = y;
+
+		//Define attributes of start
+		PS.color(x,y, DOOR_COLOR);
+		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.data(x,y,LOCKED_MARKER);
+
+		PS.gridPlane(OBSTACLE_PLANE);
+		PS.color(x,y, DOOR_COLOR);
+		PS.alpha(x,y,255);
 		PS.gridPlane(oPlane);
 	}
 
@@ -302,10 +382,17 @@ let G = (function (){
 		let oPlane = PS.gridPlane();
 		PS.gridPlane(OBSTACLE_PLANE);
 
+
+
 		//Define attributes of start
 		PS.color(x,y,UI_COLOR);
 		PS.alpha(x,y,PS.ALPHA_OPAQUE);
+		PS.fade(x, y, 15);
 		PS.border(x,y, {top: 5});
+
+		if(x < 2){
+			PS.glyph(x,y,"0");
+		}
 		updateUI(snakeLength);
 
 		//reset gridplane
@@ -317,13 +404,15 @@ let G = (function (){
 	 * Reset the snake's position
 	 */
 	let resetSnake = function(data){
+		PS.glyph(currX,currY,"");
 		PS.spriteMove(snakeSprite, snakeX, snakeY);
+		PS.glyph(snakeX,snakeY, SNAKE_EYE);
 		deleteSnakeLine(snakeLine);
 		snakeLine = [];
 		pivotLine = [];
 		snakeDistance = 0;
 		updateUI(snakeLength);
-		moveCounter += 1;
+		//moveCounter += 1;
 		isPivoting = false;
 		canMoveSnake = false;
 	}
@@ -333,20 +422,20 @@ let G = (function (){
 	 * @param snakeLine
 	 */
 	let checkObstacleOverlap = function(snakeLine){
-		let isOverlapping = false;
 		for(let i=0; i < snakeLine.length; i++){
 			//Check to see if a line part overlaps with an obstacle. If it does, reset
-			if(PS.data(snakeLine[i][0], snakeLine[i][1]) === OBSTACLE_MARKER){
-				PS.spriteMove(snakeSprite, snakeX, snakeY);
-				isOverlapping = true;
+			if(PS.data(snakeLine[i][0], snakeLine[i][1]) === (OBSTACLE_MARKER || LOCKED_MARKER)){
+				return true;
 			}
 		}
-		if(isOverlapping){
-			PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
-			resetSnake();
-		}
+		return false;
 	}
 
+	/**
+	 * Checks to see if the snake is running over itself
+	 * @param pivotPoint
+	 * @returns {boolean}
+	 */
 	let dupeCheck = function(pivotPoint){
 		for(let i=0; i < snakeLine.length; i++){
 			if(pivotPoint[0] === snakeLine[i][0] && pivotPoint[1] === snakeLine[i][1]){
@@ -362,9 +451,16 @@ let G = (function (){
 	 * @param y - current y location of snake
 	 */
 	let moveSnake = function(x,y){
+		//First, check to see if the snake can move
 		if(canMoveSnake){
 			let data = PS.data(x,y);
 			//let oplane = PS.gridPlane();
+
+			//Draw the eye glyph here
+			if(y < UIPosition && !checkObstacleOverlap(snakeLine)){
+				PS.glyph(x,y, SNAKE_EYE);
+			}
+
 			if(!isPivoting){
 				//Assign data as a grabbable variable and make a new line
 
@@ -372,12 +468,16 @@ let G = (function (){
 
 				//PS.debug(snakeLine);
 			} else if(isPivoting){
-
-				//pivotSnake(x,y);
 				let pivotPoint = [x,y];
 
+				//Check to see if the snake ran into itself
 				if(dupeCheck(pivotPoint)){
 					PS.statusText("Ouch, the snake bumped into itself!");
+					PS.debug("X: "+ x + " Y: " + y);
+					let oplane = PS.gridPlane();
+					for(let i=0; i < 7; i++){
+						PS.spriteMove(snakeSprite, snakeX, snakeY);
+					}
 					resetSnake();
 				} else {
 					snakeLine.push(pivotPoint);
@@ -385,10 +485,10 @@ let G = (function (){
 				//pivotLine = PS.line(snakePivotX, snakePivotY, x, y);
 			}
 
-			checkObstacleOverlap(snakeLine);
+			PS.debug("Gridplane: " + PS.gridPlane());
 
 			//Reset if you move onto an obstacle marker
-			if(data === OBSTACLE_MARKER){
+			if(data === (OBSTACLE_MARKER || LOCKED_MARKER)){
 				PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
 				resetSnake();
 				return;
@@ -408,7 +508,18 @@ let G = (function (){
 					snakeSound = 1;
 				}
 
+
 				PS.audioPlay("snakeStep" + snakeSound, {path: "audio/", volume: 0.3});
+
+				if(checkObstacleOverlap(snakeLine) || data === LOCKED_MARKER){
+					PS.glyph(x,y,"");
+					let oplane = PS.gridPlane();
+					PS.gridPlane(0);
+					PS.glyph(x,y,"");
+					PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
+					resetSnake();
+					PS.gridPlane(oplane);
+				}
 
 				if(dupeCheck(snakeLine) === true){
 					PS.statusText("Ouch, the snake bumped into itself!");
@@ -420,12 +531,11 @@ let G = (function (){
 				if(snakeLength - snakeDistance < 0){
 					PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
 					PS.statusText("The snake stretched too far!");
+					if(PS.glyph(x,y) === SNAKE_EYE){
+						PS.glyph(x,y,"");
+					}
 					resetSnake();
 				}
-			} else {
-				PS.statusText("line 417 has proved its existence");
-				resetSnake();
-				return;
 			}
 
 			//Increase the snake's length if you enter a powerup
@@ -436,12 +546,23 @@ let G = (function (){
 				PS.statusText("The snake's length has increased!");
 			}
 
+			//Unlock doors
+			if(data === KEY_MARKER){
+				PS.data(x,y, "nah");
+				unlockDoor(doorX, doorY);
+				PS.audioPlay("fx_powerup1", {volume: 0.1});
+				PS.statusText("The door to the goal has been unlocked!");
+			}
+
 			PS.gridPlane(BACKGROUND_PLANE);
 
 			//Color in the line area
 			for(let i=0; i < snakeLine.length; i++){
 				PS.color(snakeLine[i][0], snakeLine[i][1], SNAKE_MAP_COLOR);
 			}
+
+
+
 
 			//Auto-reset snake if it travels into the UI
 			if(y === UIPosition){
@@ -500,7 +621,13 @@ let G = (function (){
 						placeObstacle(x,y);
 						break;
 					case UI_COLOR:
-						//placeUI(x,y);
+						placeUI(x,y);
+						break;
+					case KEY_MAP_COLOR:
+						placeKey(x,y);
+						break;
+					case DOOR_MAP_COLOR:
+						placeDoor(x,y);
 						break;
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
@@ -519,6 +646,7 @@ let G = (function (){
 		PS.spriteSolidColor(snakeSprite, SNAKE_MAP_COLOR);
 		PS.spritePlane(snakeSprite, SNAKE_PLANE);
 		PS.spriteMove(snakeSprite, snakeX, snakeY);
+		PS.glyph(snakeX,snakeY, SNAKE_EYE);
 	};
 
 
@@ -572,9 +700,12 @@ let G = (function (){
 				switch(data){
 					case POLE_MARKER:
 					case START_MARKER:
+						moveCounter += 1;
 						snakeX = x;
 						snakeY = y;
-						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						if(snakeLine.length > 1){
+							PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						}
 						deleteSnakeLine(snakeLine);
 						if(isPivoting){
 							snakeLine = [];
@@ -588,10 +719,13 @@ let G = (function (){
 						levelIndex += 1;
 
 						PS.audioPlay("snakeStep" + endDecider, {path: "audio/", volume: 0.3});
+						//moveCounter += 1;
 						resetSnake();
 						loadLevel(levelIndex);
 						break;
 					default:
+						let pivotRando = PS.random(3);
+						PS.audioPlay("snakePivot" + pivotRando, {path: "audio/", volume: 0.3});
 						if(levelIndex === 6){
 							PS.statusText("You can move in any direction while pivoting!");
 						} else {
@@ -654,18 +788,33 @@ let G = (function (){
 
 		},
 		enter: function(x,y){
-			moveSnake(x,y);
+			currX = x;
+			currY = y;
+			if(canMoveSnake){
+				moveSnake(x,y);
+			}
+
 		},
 		exit: function(x,y){
 			//Erase in the line area
+			if(checkObstacleOverlap(snakeLine)){
+				PS.glyph(x,y,"");
+				PS.spriteMove(snakeSprite, snakeX, snakeY);
+			}
+			if(PS.glyph(x,y) === SNAKE_EYE && canMoveSnake){
+				PS.glyph(x,y,"");
+			}
+
 			if(canMoveSnake) {
 				redrawSnakeLine();
-			} else {
-				resetSnake();
 			}
 		},
 		exitGrid: function(){
-			resetSnake();
+			if(canMoveSnake){
+				resetSnake();
+				updateUI(snakeLength);
+			}
+
 		},
 		keyDown: function(key){
 			switch(key){
@@ -681,6 +830,7 @@ let G = (function (){
 					isPivoting = true;
 					break;
 				case PS.KEY_ARROW_UP:
+					PS.glyph(currX,currY,"");
 					PS.statusText("Line was cancelled.");
 					PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
 					resetSnake();
