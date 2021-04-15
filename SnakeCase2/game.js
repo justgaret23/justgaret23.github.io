@@ -473,7 +473,7 @@ let G = (function (){
 				//Check to see if the snake ran into itself
 				if(dupeCheck(pivotPoint)){
 					PS.statusText("Ouch, the snake bumped into itself!");
-					PS.debug("X: "+ x + " Y: " + y);
+					//PS.debug("X: "+ x + " Y: " + y);
 					let oplane = PS.gridPlane();
 					for(let i=0; i < 7; i++){
 						PS.spriteMove(snakeSprite, snakeX, snakeY);
@@ -485,7 +485,7 @@ let G = (function (){
 				//pivotLine = PS.line(snakePivotX, snakePivotY, x, y);
 			}
 
-			PS.debug("Gridplane: " + PS.gridPlane());
+			//PS.debug("Gridplane: " + PS.gridPlane());
 
 			//Reset if you move onto an obstacle marker
 			if(data === (OBSTACLE_MARKER || LOCKED_MARKER)){
@@ -725,7 +725,7 @@ let G = (function (){
 						break;
 					default:
 						let pivotRando = PS.random(3);
-						PS.audioPlay("snakePivot" + pivotRando, {path: "audio/", volume: 0.3});
+						PS.audioPlay("SnakePivot" + pivotRando, {path: "audio/", volume: 0.3});
 						if(levelIndex === 6){
 							PS.statusText("You can move in any direction while pivoting!");
 						} else {
