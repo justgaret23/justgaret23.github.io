@@ -24,7 +24,7 @@ let G = (function (){
 
 	let MAP_BACKGROUND;
 	let BACKGROUND_MAP_COLOR = 0xAAAAAA; //background color
-	let BACKGROUND_COLOR = 0x00C694;
+	let BACKGROUND_COLOR = 0x73D672;
 	let BACKGROUND_PLANE = 0; //background plane
 	let BACKGROUND_RGB;
 
@@ -36,7 +36,7 @@ let G = (function (){
 
 	//Define snake constants here
 	let SNAKE_PLANE = 4; //plane
-	let SNAKE_MAP_COLOR = 0x73D673; //color
+	let SNAKE_MAP_COLOR = 0x026F23; //color
 	let SNAKE_INIT_LENGTH = 4;
 	let SNAKE_EYE = 0x0298; //Snake eye glyph constant
 	let SNAKE_BONK = "⨂";
