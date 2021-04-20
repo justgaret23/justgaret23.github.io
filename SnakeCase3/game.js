@@ -29,7 +29,7 @@ let G = (function (){
 	let BACKGROUND_RGB;
 
 	let UI_MAP_COLOR = 0x777777;
-	let UI_COLOR = 0x9EA2AB;
+	let UI_COLOR = 0xA8BDCA;
 	let UIPosition = gridSizeY-1;
 
 
@@ -165,6 +165,7 @@ let G = (function (){
 
 		//Load a level depending on the level index
 		if(levelIndex > 12){
+			PS.audioPlay("partyHorn", {path: "audio/", volume: 0.3});
 			PS.statusText("You found a new home!");
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
 			//PS.imageLoad("images/newHome.gif", onMapLoad);
@@ -369,7 +370,7 @@ let G = (function (){
 		//Define attributes of start
 		PS.color(x,y,BACKGROUND_COLOR);
 		PS.alpha(x,y,PS.ALPHA_OPAQUE);
-		PS.fade(x, y, 30);
+		//PS.fade(x, y, 30);
 
 		//reset gridplane
 		PS.gridPlane(oPlane);
@@ -415,10 +416,10 @@ let G = (function (){
 		//Define attributes of start
 		PS.color(x,y,BACKGROUND_COLOR);
 		PS.data(x,y,"no");
-		PS.fade(x,y,30);
+		//PS.fade(x,y,30);
 
 		PS.gridPlane(oPlane);
-		PS.fade(x,y,30);
+		//PS.fade(x,y,30);
 	}
 
 	/**
@@ -433,7 +434,7 @@ let G = (function (){
 		PS.data(x,y,UNLOCKED_MARKER);
 
 		PS.color(x,y,BACKGROUND_COLOR);
-		PS.fade(x,y,30);
+		//PS.fade(x,y,30);
 
 		PS.gridPlane(OBSTACLE_PLANE);
 		PS.alpha(x,y,0);
@@ -521,8 +522,6 @@ let G = (function (){
 
 				//Check to see if the snake ran into itself
 				if(dupeCheck(pivotPoint)){
-
-					PS.statusText("pog1");
 					//PS.debug("X: "+ x + " Y: " + y);
 					PS.glyph(x,y,"");
 					let oplane = PS.gridPlane();
@@ -583,7 +582,6 @@ let G = (function (){
 				updateUI(snakeLength-snakeDistance);
 				if(snakeLength - snakeDistance < 0){
 					PS.audioPlay("SnakeGrab", {path: "audio/", volume: 0.3});
-					PS.statusText("The snake stretched too far!");
 					if(PS.glyph(x,y) === SNAKE_EYE){
 						PS.glyph(x,y,"");
 					}
@@ -759,7 +757,6 @@ let G = (function (){
 						if(isPivoting){
 							snakeLine = [];
 							isPivoting = false;
-							PS.statusText("Branch latched onto! Pivot isn't needed anymore...");
 						}
 						updateUI(snakeLength);
 						// resetSnake();
@@ -776,10 +773,7 @@ let G = (function (){
 						PS.audioPlay("SnakePivot" + pivotRando, {path: "audio/", volume: 0.3});
 						if(levelIndex === 6){
 							PS.statusText("You can move in any direction while pivoting!");
-						} else {
-							PS.statusText("Pivoting...");
 						}
-
 						isPivoting = true;
 						break;
 				}
@@ -826,14 +820,6 @@ let G = (function (){
 			switch(key){
 				//Z
 				case 122:
-
-					if(levelIndex === 6){
-						PS.statusText("You can move in any direction while pivoting!");
-					} else {
-						PS.statusText("Pivoting...");
-					}
-
-					isPivoting = true;
 					break;
 				case PS.KEY_ARROW_UP:
 					PS.glyph(currX,currY,"");
@@ -844,13 +830,7 @@ let G = (function (){
 			}
 		},
 		keyUp: function(key){
-			switch(key){
-				//Z
-				case 122:
-					PS.statusText("Pivot has stopped.");
-					resetSnake();
-					break;
-			}
+
 		}
 
 	};
