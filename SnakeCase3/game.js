@@ -17,7 +17,7 @@ let G = (function (){
 	let gridSizeX = 8;
 	let gridSizeY = 8;
 	let moveCounter = 0;
-	let levelIndex = 1;
+	let levelIndex = 13;
 
 	let tick = 30;
 	let running = true;
@@ -26,6 +26,7 @@ let G = (function (){
 	let BACKGROUND_MAP_COLOR = 0xAAAAAA; //background color
 	let BACKGROUND_COLOR = 0x73D672;
 	let BACKGROUND_PLANE = 0; //background plane
+	let DARKNESS_PLANE = 6;
 	let BACKGROUND_RGB;
 
 	let UI_MAP_COLOR = 0x777777;
@@ -37,7 +38,7 @@ let G = (function (){
 	//Define snake constants here
 	let SNAKE_PLANE = 4; //plane
 	let SNAKE_MAP_COLOR = 0x026F23; //color
-	let SNAKE_INIT_LENGTH = 4;
+	let SNAKE_INIT_LENGTH = 7;
 	let SNAKE_EYE = 0x0298; //Snake eye glyph constant
 	let SNAKE_BONK = "⨂";
 	let bonked = false;
@@ -100,6 +101,8 @@ let G = (function (){
 	let LOCKED_MARKER = "locked";
 	let UNLOCKED_MARKER = "unlocked"
 
+	let UI_PLANE = 7;
+
 
 
 	let timer_id;
@@ -126,7 +129,7 @@ let G = (function (){
 			let tensDigit = Math.floor(moveCounter/10);
 			let onesDigit = moveCounter % 10;
 
-			PS.gridPlane(OBSTACLE_PLANE);
+			PS.gridPlane(UI_PLANE);
 
 			PS.glyph(0, UIPosition, tensDigit.toString());
 			PS.glyph(1, UIPosition, onesDigit.toString());
@@ -155,6 +158,9 @@ let G = (function (){
 			case 1:
 				PS.statusText("Drag the snake onto other pixels to move it!");
 				break;
+			case 3:
+				PS.statusText("Press Up if you ever want to cancel a move!");
+				break;
 			case 6:
 				PS.statusText("Click on an empty space to pivot!");
 				break;
@@ -164,11 +170,11 @@ let G = (function (){
 		}
 
 		//Load a level depending on the level index
-		if(levelIndex > 12){
+		if(levelIndex > 13){
 			PS.audioPlay("partyHorn", {path: "audio/", volume: 0.3});
 			PS.statusText("You found a new home!");
-			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
-			//PS.imageLoad("images/newHome.gif", onMapLoad);
+			//PS.imageLoad("newHome" + ".gif", onMapLoad, 1);
+			PS.imageLoad("images/newHome.gif", onMapLoad);
 		} else {
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
 		}
@@ -384,7 +390,7 @@ let G = (function (){
 	 */
 	let placeUI = function(x,y){
 		let oPlane = PS.gridPlane();
-		PS.gridPlane(OBSTACLE_PLANE);
+		PS.gridPlane(UI_PLANE);
 
 
 
@@ -443,6 +449,72 @@ let G = (function (){
 		PS.gridPlane(oPlane);
 	}
 
+	let ZONES = [
+		[
+			[0 , 0],[ -1, -1 ], [ 0, -1 ], [ 1, -1 ],
+			[ -1, 0 ], [ 1, 0 ],
+			[ -1, 1 ], [ 0, 1 ], [ 1, 1 ]
+		],
+		[
+			[ -2, -2 ], [ -1, -2 ], [ 0, -2 ], [ 1, -2 ], [ 2, -2 ],
+			[ -2, -1 ], [ 2, -1 ],
+			[ -2, 0 ], [ 2, 0 ],
+			[ -2, 1 ], [ 2, 1 ],
+			[ -2, 2 ], [ -1, 2 ], [ 0, 2 ], [ 1, 2 ], [ 2, 2 ]
+		],
+		[
+			[ -1, -3 ], [ 0, -3 ], [ 1, -3 ],
+			[ -3, -1 ], [ 3, -1 ],
+			[ -3, 0 ], [ 3, 0 ],
+			[ -3, 1 ], [ 3, 1 ],
+			[ -1, 3 ], [ 0, 3 ], [ 1, 3 ]
+		]
+	];
+
+	/**
+	 * illuminate stuff
+	 * @param x
+	 * @param y
+	 */
+	let illuminate = function ( x, y ) {
+		var oplane, zone, i, j, offset, dx, dy;
+
+		oplane = PS.gridPlane();
+		PS.gridPlane( DARKNESS_PLANE );
+		//PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
+		//PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+
+		for ( j = 0; j < ZONES.length; j += 1 ) {
+			zone = ZONES[ j ];
+			for ( i = 0; i < zone.length; i += 1 ) {
+				offset = zone[ i ];
+				dx = x + offset[ 0 ];
+				dy = y + offset[ 1 ];
+				if ( ( dx >= 0 ) && ( dx < gridSizeX ) && ( dy >= 0 ) && ( dy < gridSizeY ) ) {
+					//PS.data(dx,dy, "active");
+					if ( PS.alpha( dx, dy ) !== PS.ALPHA_TRANSPARENT ) {
+						PS.alpha( dx, dy, PS.ALPHA_TRANSPARENT );
+
+						// seen[ ( dy * GRID_Y ) + dx ] = PS.ALPHA_TRANSPARENT;
+					}
+				}
+			}
+		}
+
+		/*
+		for(let x = 0; x < gridSizeX; x += 1){
+			for(let y = 0; y < UIPosition; y += 1){
+				if(PS.alpha(x,y) === PS.ALPHA_TRANSPARENT && PS.data(x,y) !== "active"){
+					PS.alpha(x,y, PS.ALPHA_OPAQUE);
+				}
+			}
+		}
+
+		 */
+
+		PS.gridPlane( oplane );
+	};
+
 	/**
 	 * Reset the snake's position
 	 */
@@ -450,6 +522,7 @@ let G = (function (){
 		PS.glyph(currX,currY,"");
 		PS.spriteMove(snakeSprite, snakeX, snakeY);
 		PS.glyph(snakeX,snakeY, SNAKE_EYE);
+		illuminate(snakeX,snakeY);
 		deleteSnakeLine(snakeLine);
 		snakeLine = [];
 		snakeDistance = 0;
@@ -554,6 +627,7 @@ let G = (function (){
 			//Check to make sure length isn't being exceeded
 			if((snakeDistance <= snakeLength) && canMoveSnake){
 				PS.spriteMove(snakeSprite,x,y);
+				illuminate(x,y);
 				let snakeSound;
 				if(snakeLine.length <= 4){
 					snakeSound = Math.min(snakeLine.length + (PS.random(3)-1), 12);
@@ -688,6 +762,16 @@ let G = (function (){
 		BACKGROUND_RGB = PS.unmakeRGB(BACKGROUND_COLOR, {});
 		//drawBackground(imagemap);
 
+		// Create darkness plane
+
+		let oPlane = PS.gridPlane();
+
+		PS.gridPlane( DARKNESS_PLANE );
+		//PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
+		//PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+		//illuminate(snakeX,snakeY);
+
+		PS.gridPlane(oPlane);
 		//Create and move snake sprite to appropriate plane and location
 		snakeSprite = PS.spriteSolid(1,1);
 		PS.spriteSolidColor(snakeSprite, SNAKE_MAP_COLOR);
