@@ -17,7 +17,7 @@ let G = (function (){
 	let gridSizeX = 8;
 	let gridSizeY = 8;
 	let moveCounter = 0;
-	let levelIndex = 13;
+	let levelIndex = 1;
 
 	let tick = 30;
 	let running = true;
@@ -38,7 +38,7 @@ let G = (function (){
 	//Define snake constants here
 	let SNAKE_PLANE = 4; //plane
 	let SNAKE_MAP_COLOR = 0x026F23; //color
-	let SNAKE_INIT_LENGTH = 7;
+	let SNAKE_INIT_LENGTH = 4;
 	let SNAKE_EYE = 0x0298; //Snake eye glyph constant
 	let SNAKE_BONK = "⨂";
 	let bonked = false;
@@ -138,6 +138,10 @@ let G = (function (){
 			PS.glyph(1, UIPosition, "9");
 		}
 
+		if(snakeLength > gridSizeX){
+			snakeLength = gridSizeX;
+		}
+
 		//Update color and snake length
 		PS.color(PS.ALL, UIPosition, UI_COLOR);
 		for(let i = 0; i < snakeLength; i++){
@@ -170,11 +174,11 @@ let G = (function (){
 		}
 
 		//Load a level depending on the level index
-		if(levelIndex > 13){
+		if(levelIndex > 19){
 			PS.audioPlay("partyHorn", {path: "audio/", volume: 0.3});
 			PS.statusText("You found a new home!");
 			//PS.imageLoad("newHome" + ".gif", onMapLoad, 1);
-			PS.imageLoad("images/newHome.gif", onMapLoad);
+			PS.imageLoad("images/newHome.gif", onMapLoad, 1);
 		} else {
 			PS.imageLoad("images/tutorial" + levelIndex + ".gif", onMapLoad, 1);
 		}
@@ -481,8 +485,10 @@ let G = (function (){
 
 		oplane = PS.gridPlane();
 		PS.gridPlane( DARKNESS_PLANE );
-		//PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
-		//PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+		if(levelIndex > 15 && levelIndex < 20){
+			PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
+			PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+		}
 
 		for ( j = 0; j < ZONES.length; j += 1 ) {
 			zone = ZONES[ j ];
@@ -766,12 +772,15 @@ let G = (function (){
 
 		let oPlane = PS.gridPlane();
 
-		PS.gridPlane( DARKNESS_PLANE );
-		//PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
-		//PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
-		//illuminate(snakeX,snakeY);
+		if(levelIndex > 15 && levelIndex < 20){
+			PS.gridPlane( DARKNESS_PLANE );
+			PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
+			PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+			illuminate(snakeX,snakeY);
 
-		PS.gridPlane(oPlane);
+			PS.gridPlane(oPlane);
+		}
+
 		//Create and move snake sprite to appropriate plane and location
 		snakeSprite = PS.spriteSolid(1,1);
 		PS.spriteSolidColor(snakeSprite, SNAKE_MAP_COLOR);
