@@ -12,6 +12,188 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 
 "use strict"; // Do NOT delete this directive!
 
+
+let G = ( function (){
+
+	//Colors
+	let BACKGROUND_MAP_COLOR = 0xFFFFFF;
+	let WALL_MAP_COLOR = 0x000000;
+	let SPAWN_MAP_COLOR = 0x00FF00;
+	let DOOR_MAP_COLOR = 0x0000FF;
+	let SNAKE_MAP_COLOR = 0x009900;
+
+	//maps for pathfinder
+	let MAP_GROUND = 1;
+	let MAP_WALL = 0;
+
+	//planes
+	let MAP_PLANE = 0;
+	let EGGPLANT_PLANE = 1;
+	let NPC_PLANE = 2;
+	let ENEMY_PLANE = 3;
+	let PLAYER_PLANE = 4;
+
+	//sprite ids
+	let ratSprite;
+	let humanSprite;
+	let porcupineSprite;
+	let birdSprite;
+	let snakeSprite;
+
+	//grid variables
+	let gridSizeX = 16;
+	let gridSizeY = 16;
+
+	let timer_id;
+	let mapdata;
+
+	let imagemap = {
+		width: 0,
+		height: 0,
+		pixelSize: 1,
+		data: []
+	};
+
+	let drawMap = function(map){
+		
+	}
+
+	let onMapLoad = function(image){
+		if(image === PS.ERROR){
+			PS.debug( "onMapLoad(): image load error\n" );
+			return;
+		}
+
+		//Timer
+		//throttle - should i run this tick or not?
+		//timer_id = PS.timerStart(tick, redrawSnakeLine());
+
+		//save map data for later
+		mapdata = image;
+
+		imagemap.width = gridSizeX = image.width;
+		imagemap.height = gridSizeY = image.height;
+
+		PS.gridSize( gridSizeX, gridSizeY );
+		PS.border( PS.ALL, PS.ALL, 0 );
+
+		let i = 0;
+		for(let y = 0; y < gridSizeY; y += 1){
+			for(let x = 0; x < gridSizeX; x += 1){
+				let data = MAP_BACKGROUND;
+				let pixel = image.data[i];
+				switch(pixel){
+					case BACKGROUND_MAP_COLOR:
+						placeBackground(x,y);
+						break;
+					case START_MAP_COLOR:
+						placeStart(x,y);
+						break;
+					case GOAL_MAP_COLOR:
+						placeGoal(x,y);
+						break;
+					case POWERUP_MAP_COLOR:
+						placePowerup(x,y);
+						break;
+					case HINT_MAP_COLOR:
+						placeHint(x,y);
+						break;
+					case POLE_MAP_COLOR:
+						placePole(x,y);
+						break;
+					case OBSTACLE_MAP_COLOR:
+						placeObstacle(x,y);
+						break;
+					case UI_MAP_COLOR:
+						placeUI(x,y);
+						break;
+					case KEY_MAP_COLOR:
+						placeKey(x,y);
+						break;
+					case DOOR_MAP_COLOR:
+						placeDoor(x,y);
+						break;
+					default:
+						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
+						break;
+				}
+				imagemap.data[i] = data;
+				i += 1;
+			}
+		}
+
+		// Create darkness plane
+
+		let oPlane = PS.gridPlane();
+
+		if(levelIndex > 15 && levelIndex < 20){
+			PS.gridPlane( DARKNESS_PLANE );
+			PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
+			PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
+			illuminate(snakeX,snakeY);
+
+			PS.gridPlane(oPlane);
+		}
+
+		//Create and move snake sprite to appropriate plane and location
+		snakeSprite = PS.spriteSolid(1,1);
+		PS.spriteSolidColor(snakeSprite, SNAKE_MAP_COLOR);
+		PS.spritePlane(snakeSprite, SNAKE_PLANE);
+		PS.spriteMove(snakeSprite, snakeX, snakeY);
+		PS.glyph(snakeX,snakeY, SNAKE_EYE);
+	};
+
+	return{
+		init: function(){
+			// Change this string to your team name
+			// Use only ALPHABETIC characters
+			// No numbers, spaces or punctuation!
+
+			const TEAM = "teamname";
+
+			// Begin with essential setup
+			// Establish initial grid size
+
+			PS.gridSize( 8, 8 ); // or whatever size you want
+
+			// Install additional initialization code
+			// here as needed
+
+			// PS.dbLogin() must be called at the END
+			// of the PS.init() event handler (as shown)
+			// DO NOT MODIFY THIS FUNCTION CALL
+			// except as instructed
+
+			PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
+				if ( user === PS.ERROR ) {
+					return PS.dbErase( TEAM );
+				}
+				PS.dbEvent( TEAM, "startup", user );
+				PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
+			}, { active : false } );
+		},
+		touch: function(x,y){
+
+		},
+		release: function(x,y){
+
+		},
+		enter: function(x,y){
+
+		},
+		exit: function(x,y){
+
+		},
+		exitGrid: function(){
+
+		},
+		keyDown: function(key){
+
+		}
+	};
+
+} ());
+
 /*
 PS.init( system, options )
 Called once after engine is initialized but before event-polling begins.
@@ -22,34 +204,7 @@ Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.init = function( system, options ) {
-	// Change this string to your team name
-	// Use only ALPHABETIC characters
-	// No numbers, spaces or punctuation!
-
-	const TEAM = "teamname";
-
-	// Begin with essential setup
-	// Establish initial grid size
-
-	PS.gridSize( 8, 8 ); // or whatever size you want
-
-	// Install additional initialization code
-	// here as needed
-
-	// PS.dbLogin() must be called at the END
-	// of the PS.init() event handler (as shown)
-	// DO NOT MODIFY THIS FUNCTION CALL
-	// except as instructed
-
-	PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
-		if ( user === PS.ERROR ) {
-			return PS.dbErase( TEAM );
-		}
-		PS.dbEvent( TEAM, "startup", user );
-		PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
-	}, { active : false } );
-};
+PS.init = G.init;
 
 /*
 PS.touch ( x, y, data, options )
@@ -61,15 +216,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.touch = function( x, y, data, options ) {
-	// Uncomment the following code line
-	// to inspect x/y parameters:
-
-	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
-
-	// Add code here for mouse clicks/touches
-	// over a bead.
-};
+PS.touch = G.touch;
 
 /*
 PS.release ( x, y, data, options )
@@ -81,13 +228,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.release = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.release() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse button/touch is released over a bead.
-};
+PS.release = G.release;
 
 /*
 PS.enter ( x, y, button, data, options )
@@ -99,13 +240,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.enter = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.enter() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch enters a bead.
-};
+PS.enter = G.enter;
 
 /*
 PS.exit ( x, y, data, options )
@@ -117,13 +252,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.exit = function( x, y, data, options ) {
-	// Uncomment the following code line to inspect x/y parameters:
-
-	// PS.debug( "PS.exit() @ " + x + ", " + y + "\n" );
-
-	// Add code here for when the mouse cursor/touch exits a bead.
-};
+PS.exit = G.exit;
 
 /*
 PS.exitGrid ( options )
@@ -132,13 +261,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.exitGrid = function( options ) {
-	// Uncomment the following code line to verify operation:
-
-	// PS.debug( "PS.exitGrid() called\n" );
-
-	// Add code here for when the mouse cursor/touch moves off the grid.
-};
+PS.exitGrid = G.exitGrid;
 
 /*
 PS.keyDown ( key, shift, ctrl, options )
@@ -150,13 +273,7 @@ This function doesn't have to do anything. Any value returned is ignored.
 [options : Object] = A JavaScript object with optional data properties; see API documentation for details.
 */
 
-PS.keyDown = function( key, shift, ctrl, options ) {
-	// Uncomment the following code line to inspect first three parameters:
-
-	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-
-	// Add code here for when a key is pressed.
-};
+PS.keyDown = G.keyDown;
 
 /*
 PS.keyUp ( key, shift, ctrl, options )
@@ -212,4 +329,3 @@ PS.shutdown = function( options ) {
 
 	// Add code here to tidy up when Perlenspiel is about to close.
 };
-
