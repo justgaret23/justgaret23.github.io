@@ -27,6 +27,9 @@ let G = ( function (){
 	const SNAKE_MAP_COLOR = 0x009900;
 	const HUMAN_MAP_COLOR = 0xeec39a;
 
+	//data
+	const WALL_MARKER = "wall";
+
 	//maps for pathfinder
 	const MAP_GROUND = 1;
 	const MAP_WALL = 0;
@@ -39,10 +42,12 @@ let G = ( function (){
 	const PLAYER_PLANE = 4;
 
 	//player variables
-	let playerX = 0;
-	let playerY = 0;
-	let PLAYER_COLOR = 0x999999;
+	let playerX = 11;
+	let playerY = 5;
+	const PLAYER_COLOR = 0x999999;
+	const PLAYER_SPEED = 0.5;
 	let currentPlayerShards = 0;
+	let playerPath = [];
 
 	//enemies
 	let enemies = [];
@@ -67,6 +72,12 @@ let G = ( function (){
 
 	let aiPoints = [];
 	let aiPointMarker = 0;
+
+	let enemyTouch = function(s1, p1, s2, p2, type){
+		if(type === PS.SPRITE_OVERLAP){
+			PS.statusText("Rats! You were devoured!");
+		}
+	}
 
 	///////////////////
 	// Enemy Classes //
@@ -129,6 +140,7 @@ let G = ( function (){
 			this.lastY = y; //previous y position
 			this.nextX = x; //next x position
 			this.nextY = y; //next y position
+			this.rotateCounter = 30;
 			this.view = PS.line(this.x,this.y,this.x,this.y);
 			this.speed = 1;
 			this.snakeDirections = 0;
@@ -136,6 +148,8 @@ let G = ( function (){
 			this.sprite = PS.spriteSolid(1,1);
 			PS.spriteSolidColor(this.sprite, SNAKE_MAP_COLOR);
 			PS.spritePlane(this.sprite, ENEMY_PLANE);
+			PS.spriteCollide(this.sprite, enemyTouch);
+			PS.spriteMove(this.sprite, this.x,this.y);
 
 			enemies.push(this);
 		}
@@ -144,6 +158,7 @@ let G = ( function (){
 			if(this.alert){
 				this.nextX = playerX;
 				this.nextY = playerY;
+				PS.statusText("swiggity swoogity im coming for that rat");
 				//Pathfind your way to the player
 			} else {
 				let checkX = this.x;
@@ -159,7 +174,9 @@ let G = ( function (){
 							if(PS.color(this.x, checkY) === WALL_MAP_COLOR){
 								break;
 							}
+							//PS.debug("pingas");
 							checkY--;
+							PS.color(this.x, checkY, 0xFF0000);
 						}
 						this.view = PS.line(this.x,this.y, this.x , checkY);
 						break;
@@ -170,6 +187,7 @@ let G = ( function (){
 								break;
 							}
 							checkX++;
+							PS.color(this.x, checkX, 0xFF0000);
 						}
 						this.view = PS.line(this.x,this.y, this.x , checkX);
 						break;
@@ -179,6 +197,7 @@ let G = ( function (){
 								break;
 							}
 							checkY++;
+							PS.color(this.x, checkY, 0xFF0000);
 						}
 						this.view = PS.line(this.x,this.y, this.x , checkY);
 						break;
@@ -189,15 +208,28 @@ let G = ( function (){
 								break;
 							}
 							checkX--;
+							PS.color(this.x, checkX, 0xFF0000);
 						}
 						this.view = PS.line(this.x,this.y, this.x , checkX);
 						break;
 				}
 
+
 				//check to see if the player interacts with the view
 				for(let i=0; i < this.view.length; i++){
 					if(isPlayerSeen(playerX, playerY, this.view[i][0], this.view[i][1])){
 						this.alert = true;
+						break;
+					}
+				}
+
+				//Update rotational counter as needed
+				this.rotateCounter++;
+				if(this.rotateCounter > 30){
+					if(this.snakeDirections === (4 || 0)){
+						this.snakeDirections = 1;
+					} else {
+						this.snakeDirections++;
 					}
 				}
 
@@ -239,7 +271,61 @@ let G = ( function (){
 	}
 
 	let movePlayer = function(){
+		let dx = 0;
+		let dy = 0;
+		if(playerPath.length > 0){
+			let next = playerPath[0];
+			let nextX = Math.floor(next[0]);
+			let nextY = Math.floor(next[1]);
 
+			PS.debug(next);
+
+			//stop when you run into a wall
+			if(isWall(nextX,nextY)){
+				playerPath = [];
+			} else {
+				dx = nextX + 0.5 - playerX;
+				dy = nextY + 0.5 - playerY;
+				if(distance(dx, dy) <= PLAYER_SPEED){
+					playerPath.shift();
+				}
+			}
+		}
+		//determine movement speed
+		if(dx !== 0 || dy !== 0){
+			let normalizedVector = PLAYER_SPEED / distance(dx, dy);
+			dx = normalizedVector * dx;
+			dy = normalizedVector * dy;
+		}
+
+		//collide with walls
+		let checkX = Math.floor(playerX + dx);
+		if(onGrid(checkX, playerY) && isWall(checkX, playerY)){
+			dx = checkX - Math.sign(dx)-playerX + 0.5;
+		}
+
+		let checkY = Math.floor(playerY + dy);
+		if(onGrid(playerX, checkY) && isWall(playerX, checkY)){
+			dy = checkY - Math.sign(dy)-playerY + 0.5;
+		}
+
+		checkX = Math.floor(playerX + dx);
+		checkY = Math.floor(playerY + dy);
+		if(onGrid(checkX, checkY) && isWall(checkX, checkY)){
+			dx = checkY - Math.sign(dy)-playerY + 0.5;
+			dy = checkY - Math.sign(dy)-playerY + 0.5;
+		}
+
+		//update position
+		playerX += dx;
+		playerY += dy;
+		PS.spriteMove(playerSprite, playerX, playerY);
+	}
+
+	let makePlayerPath = function(x,y){
+		let startX = Math.floor(playerX);
+		let startY = Math.floor(playerY);
+		playerPath = PS.line(startX, startY, x, y);
 	}
 
 	/////////////////////////
@@ -256,9 +342,41 @@ let G = ( function (){
 		data: []
 	};
 
-	let drawMap = function(map){
+	var draw_map = function ( map ) {
+		var oplane, i, x, y, data, color;
 
-	}
+		oplane = PS.gridPlane();
+		PS.gridPlane( MAP_PLANE );
+
+		i = 0;
+		for ( y = 0; y < map.height; y += 1 ) {
+			for ( x = 0; x < map.width; x += 1 ) {
+				data = map.data[ i ];
+				switch ( data ) {
+					case BACKGROUND_MAP_COLOR:
+						color = BACKGROUND_MAP_COLOR;
+						break;
+					case WALL_MAP_COLOR:
+						color = WALL_MAP_COLOR;
+						PS.data(x,y,WALL_MARKER);
+						break;
+					case SPAWN_MAP_COLOR:
+						color = BACKGROUND_MAP_COLOR;
+						break;
+					case SNAKE_MAP_COLOR:
+						color = SPAWN_MAP_COLOR;
+						break;
+					default:
+						color = PS.COLOR_WHITE;
+						break;
+				}
+				PS.color( x, y, color );
+				i += 1;
+			}
+		}
+
+		PS.gridPlane( oplane );
+	};
 
 	let onMapLoad = function(image){
 		if(image === PS.ERROR){
@@ -306,6 +424,8 @@ let G = ( function (){
 				i += 1;
 			}
 		}
+
+		draw_map( imagemap );
 	};
 
 	///////////////////
@@ -328,6 +448,30 @@ let G = ( function (){
 		return playerX === enemyX && playerY === enemyY;
 	}
 
+	let isWall = function(x,y){
+		return (PS.data(x,y) === WALL_MARKER);
+	}
+
+	/**
+	 * Ensures that an operation stays on the grid
+	 * @param x - current x component
+	 * @param y - current y component
+	 * @returns {boolean}
+	 */
+	let onGrid = function(x,y){
+		return (x >= 0 && y >= 0 && x < gridSizeX && y < gridSizeY);
+	}
+
+	/**
+	 * Calculates the length of a vector
+	 * @param x
+	 * @param y
+	 * @returns {number}
+	 */
+	let distance = function(x,y){
+		return Math.sqrt((x * x) + (y * y));
+	}
+
 	/////////////////////////////
 	//Perlenspiel API Functions//
 	/////////////////////////////
@@ -340,13 +484,22 @@ let G = ( function (){
 		//border
 		PS.border(PS.ALL, PS.ALL, 0);
 
+		let oplane = PS.gridPlane();
+		PS.gridPlane(PLAYER_PLANE);
+
+		PS.imageLoad("images/betaRatMap.gif", onMapLoad, 1);
+
+		PS.debug(playerX)
+
 		//initialize player sprite
 		playerSprite = PS.spriteSolid(1,1);
 		PS.spriteSolidColor(playerSprite, PLAYER_COLOR);
 		PS.spritePlane(playerSprite, PLAYER_PLANE);
-		//PS.spriteMove(playerSprite, playerX,playerY);
+		PS.spriteMove(playerSprite, playerX,playerY);
 
-		PS.imageLoad("images/betaRatMap.gif", onMapLoad, 1);
+		PS.gridPlane(oplane);
+
+
 
 
 		PS.timerStart(2, updateGame);
@@ -385,10 +538,20 @@ let G = ( function (){
 			 */
 			PS.gridSize(gridSizeX, gridSizeY);
 
+
 			game_setup();
+
+			PS.debug(playerX)
 		},
 		//Click on another bead to make the player go to that location
 		touch: function(x,y){
+			PS.debug(playerY);
+
+			if(x === Math.floor(playerX) && y === Math.floor(playerY)){
+				//makePlayerPath(x, y);
+			} else {
+				makePlayerPath(x, y);
+			}
 
 		},
 		release: function(x,y){
