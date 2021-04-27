@@ -15,26 +15,40 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 
 let G = ( function (){
 
+	////////////////////
+	//Shared Variables//
+	////////////////////
+
 	//Colors
-	let BACKGROUND_MAP_COLOR = 0xFFFFFF;
-	let WALL_MAP_COLOR = 0x000000;
-	let SPAWN_MAP_COLOR = 0x00FF00;
-	let DOOR_MAP_COLOR = 0x0000FF;
-	let SNAKE_MAP_COLOR = 0x009900;
+	const BACKGROUND_MAP_COLOR = 0xFFFFFF;
+	const WALL_MAP_COLOR = 0x000000;
+	const SPAWN_MAP_COLOR = 0x00FF00;
+	const DOOR_MAP_COLOR = 0x0000FF;
+	const SNAKE_MAP_COLOR = 0x009900;
+	const HUMAN_MAP_COLOR = 0xeec39a;
 
 	//maps for pathfinder
-	let MAP_GROUND = 1;
-	let MAP_WALL = 0;
+	const MAP_GROUND = 1;
+	const MAP_WALL = 0;
 
 	//planes
-	let MAP_PLANE = 0;
-	let EGGPLANT_PLANE = 1;
-	let NPC_PLANE = 2;
-	let ENEMY_PLANE = 3;
-	let PLAYER_PLANE = 4;
+	const MAP_PLANE = 0;
+	const EGGPLANT_PLANE = 1;
+	const NPC_PLANE = 2;
+	const ENEMY_PLANE = 3;
+	const PLAYER_PLANE = 4;
+
+	//player variables
+	let playerX = 0;
+	let playerY = 0;
+	let PLAYER_COLOR = 0x999999;
+	let currentPlayerShards = 0;
+
+	//enemies
+	let enemies = [];
 
 	//sprite ids
-	let ratSprite;
+	let playerSprite;
 	let humanSprite;
 	let porcupineSprite;
 	let birdSprite;
@@ -43,6 +57,194 @@ let G = ( function (){
 	//grid variables
 	let gridSizeX = 16;
 	let gridSizeY = 16;
+
+	//other variables
+	let loading = false;
+
+	//////////////////////
+	//Load patrol routes//
+	//////////////////////
+
+	let aiPoints = [];
+	let aiPointMarker = 0;
+
+	///////////////////
+	// Enemy Classes //
+	///////////////////
+
+	/**
+	 * Patrols with cone vision
+	 * If the player steps within the cone, the charge at you
+	 * @type {Human}
+	 */
+	let Human = class{
+		constructor(x,y) {
+			this.x = x; //current x position
+			this.y = y; //current y position
+			this.lastX = x; //previous x position
+			this.lastY = y; //previous y position
+			this.nextX = x; //next x position
+			this.nextY = y; //next y position
+			this.patrolSpeed = 1;
+			this.alertSpeed = 2 + (1 + currentPlayerShards);
+			this.alert = false;
+			this.inMotion = false;
+			this.sprite = PS.spriteSolid(1,1);
+			PS.spriteSolidColor(this.sprite, HUMAN_MAP_COLOR);
+			PS.spritePlane(this.sprite, ENEMY_PLANE);
+		}
+
+		update(){
+			if(this.alert){
+				if(!this.inMotion){
+					this.lastX = PS.spriteMove().x;
+					this.lastY = PS.spriteMove().y;
+
+					this.inMotion = true;
+				}
+				//Set current target to the player
+				this.nextX = playerX;
+				this.nextY = playerY;
+
+
+				//Pathfind your way to the player
+			} else {
+				this.inMotion = false;
+
+			}
+
+		}
+	}
+	/**
+	 * Sentry with straight line vision
+	 * They extend towards you at a fast pace upon seeing you
+	 * @type {Snake}
+	 */
+
+	let Snake = class{
+		constructor(x,y) {
+			this.x = x; //current x position
+			this.y = y; //current y position
+			this.lastX = x; //previous x position
+			this.lastY = y; //previous y position
+			this.nextX = x; //next x position
+			this.nextY = y; //next y position
+			this.view = PS.line(this.x,this.y,this.x,this.y);
+			this.speed = 1;
+			this.snakeDirections = 0;
+			this.alert = false;
+			this.sprite = PS.spriteSolid(1,1);
+			PS.spriteSolidColor(this.sprite, SNAKE_MAP_COLOR);
+			PS.spritePlane(this.sprite, ENEMY_PLANE);
+
+			enemies.push(this);
+		}
+
+		update(){
+			if(this.alert){
+				this.nextX = playerX;
+				this.nextY = playerY;
+				//Pathfind your way to the player
+			} else {
+				let checkX = this.x;
+				let checkY = this.y;
+
+				//If there is a wall directly next to the snake, skip that direction
+				switch(this.snakeDirections){
+					case 0:
+						this.view = PS.line(this.x,this.y,this.x,this.y);
+						break;
+					case 1:
+						while(checkY > 0){
+							if(PS.color(this.x, checkY) === WALL_MAP_COLOR){
+								break;
+							}
+							checkY--;
+						}
+						this.view = PS.line(this.x,this.y, this.x , checkY);
+						break;
+					case 2:
+						//snake looks right
+						while(checkY < gridSizeX - 1){
+							if(PS.color(this.x, checkX) === WALL_MAP_COLOR){
+								break;
+							}
+							checkX++;
+						}
+						this.view = PS.line(this.x,this.y, this.x , checkX);
+						break;
+					case 3:
+						while(checkY < gridSizeY - 1){
+							if(PS.color(this.x, checkY) === WALL_MAP_COLOR){
+								break;
+							}
+							checkY++;
+						}
+						this.view = PS.line(this.x,this.y, this.x , checkY);
+						break;
+					case 4:
+						//snake looks left
+						while(checkX > 0){
+							if(PS.color(this.x, checkX) === WALL_MAP_COLOR){
+								break;
+							}
+							checkX--;
+						}
+						this.view = PS.line(this.x,this.y, this.x , checkX);
+						break;
+				}
+
+				//check to see if the player interacts with the view
+				for(let i=0; i < this.view.length; i++){
+					if(isPlayerSeen(playerX, playerY, this.view[i][0], this.view[i][1])){
+						this.alert = true;
+					}
+				}
+
+			}
+
+		}
+	}
+
+	let Porcupine = class{
+
+	}
+
+	let Bird = class{
+
+	}
+
+	///////////////////////
+	//Game Loop Functions//
+	///////////////////////
+
+	/**
+	 * Core update loop
+	 */
+	let updateGame = function(){
+		if(loading) {
+
+		} else {
+			//basic gameplay stuff
+
+			//accept player input
+			movePlayer();
+
+			//move enemy patterns
+			for(let i=0; i < enemies.length; i++){
+				let enemy = enemies[i];
+				enemy.update();
+			}
+		}
+	}
+
+	let movePlayer = function(){
+
+	}
+
+	/////////////////////////
+	//Map Loading Functions//
+	/////////////////////////
 
 	let timer_id;
 	let mapdata;
@@ -55,7 +257,7 @@ let G = ( function (){
 	};
 
 	let drawMap = function(map){
-		
+
 	}
 
 	let onMapLoad = function(image){
@@ -74,45 +276,28 @@ let G = ( function (){
 		imagemap.width = gridSizeX = image.width;
 		imagemap.height = gridSizeY = image.height;
 
-		PS.gridSize( gridSizeX, gridSizeY );
-		PS.border( PS.ALL, PS.ALL, 0 );
+		//PS.gridSize( gridSizeX, gridSizeY );
+		//PS.border( PS.ALL, PS.ALL, 0 );
 
 		let i = 0;
 		for(let y = 0; y < gridSizeY; y += 1){
 			for(let x = 0; x < gridSizeX; x += 1){
-				let data = MAP_BACKGROUND;
+				let data = MAP_GROUND;
 				let pixel = image.data[i];
 				switch(pixel){
 					case BACKGROUND_MAP_COLOR:
-						placeBackground(x,y);
 						break;
-					case START_MAP_COLOR:
-						placeStart(x,y);
+					case WALL_MAP_COLOR:
+						data = MAP_WALL;
 						break;
-					case GOAL_MAP_COLOR:
-						placeGoal(x,y);
+					case SPAWN_MAP_COLOR:
+						playerX = x;
+						playerY = y;
 						break;
-					case POWERUP_MAP_COLOR:
-						placePowerup(x,y);
+					case SNAKE_MAP_COLOR:
+						new Snake(x,y);
 						break;
-					case HINT_MAP_COLOR:
-						placeHint(x,y);
-						break;
-					case POLE_MAP_COLOR:
-						placePole(x,y);
-						break;
-					case OBSTACLE_MAP_COLOR:
-						placeObstacle(x,y);
-						break;
-					case UI_MAP_COLOR:
-						placeUI(x,y);
-						break;
-					case KEY_MAP_COLOR:
-						placeKey(x,y);
-						break;
-					case DOOR_MAP_COLOR:
-						placeDoor(x,y);
-						break;
+
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
 						break;
@@ -121,33 +306,58 @@ let G = ( function (){
 				i += 1;
 			}
 		}
-
-		// Create darkness plane
-
-		let oPlane = PS.gridPlane();
-
-		if(levelIndex > 15 && levelIndex < 20){
-			PS.gridPlane( DARKNESS_PLANE );
-			PS.color( PS.ALL, PS.ALL, PS.COLOR_BLACK );
-			PS.alpha( PS.ALL, PS.ALL, PS.ALPHA_OPAQUE );
-			illuminate(snakeX,snakeY);
-
-			PS.gridPlane(oPlane);
-		}
-
-		//Create and move snake sprite to appropriate plane and location
-		snakeSprite = PS.spriteSolid(1,1);
-		PS.spriteSolidColor(snakeSprite, SNAKE_MAP_COLOR);
-		PS.spritePlane(snakeSprite, SNAKE_PLANE);
-		PS.spriteMove(snakeSprite, snakeX, snakeY);
-		PS.glyph(snakeX,snakeY, SNAKE_EYE);
 	};
+
+	///////////////////
+	//Audio Functions//
+	///////////////////
+
+	////////////////////
+	//Helper Functions//
+	////////////////////
+
+	/**
+	 * Check to see if the player is within the enemy's sights
+	 * @param playerX
+	 * @param playerY
+	 * @param enemyX
+	 * @param enemyY
+	 * @returns {boolean}
+	 */
+	let isPlayerSeen = function(playerX, playerY, enemyX, enemyY){
+		return playerX === enemyX && playerY === enemyY;
+	}
+
+	/////////////////////////////
+	//Perlenspiel API Functions//
+	/////////////////////////////
+
+	let game_setup = function(){
+
+		//status line
+		PS.statusText("");
+
+		//border
+		PS.border(PS.ALL, PS.ALL, 0);
+
+		//initialize player sprite
+		playerSprite = PS.spriteSolid(1,1);
+		PS.spriteSolidColor(playerSprite, PLAYER_COLOR);
+		PS.spritePlane(playerSprite, PLAYER_PLANE);
+		//PS.spriteMove(playerSprite, playerX,playerY);
+
+		PS.imageLoad("images/betaRatMap.gif", onMapLoad, 1);
+
+
+		PS.timerStart(2, updateGame);
+	}
 
 	return{
 		init: function(){
 			// Change this string to your team name
 			// Use only ALPHABETIC characters
 			// No numbers, spaces or punctuation!
+			/*
 
 			const TEAM = "teamname";
 
@@ -171,7 +381,13 @@ let G = ( function (){
 				PS.dbEvent( TEAM, "startup", user );
 				PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
 			}, { active : false } );
+
+			 */
+			PS.gridSize(gridSizeX, gridSizeY);
+
+			game_setup();
 		},
+		//Click on another bead to make the player go to that location
 		touch: function(x,y){
 
 		},
@@ -291,41 +507,4 @@ PS.keyUp = function( key, shift, ctrl, options ) {
 	// PS.debug( "PS.keyUp(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 
 	// Add code here for when a key is released.
-};
-
-/*
-PS.input ( sensors, options )
-Called when a supported input device event (other than those above) is detected.
-This function doesn't have to do anything. Any value returned is ignored.
-[sensors : Object] = A JavaScript object with properties indicating sensor status; see API documentation for details.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-NOTE: Currently, only mouse wheel events are reported, and only when the mouse cursor is positioned directly over the grid.
-*/
-
-PS.input = function( sensors, options ) {
-	// Uncomment the following code lines to inspect first parameter:
-
-	//	 var device = sensors.wheel; // check for scroll wheel
-	//
-	//	 if ( device ) {
-	//	   PS.debug( "PS.input(): " + device + "\n" );
-	//	 }
-
-	// Add code here for when an input event is detected.
-};
-
-/*
-PS.shutdown ( options )
-Called when the browser window running Perlenspiel is about to close.
-This function doesn't have to do anything. Any value returned is ignored.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-NOTE: This event is generally needed only by applications utilizing networked telemetry.
-*/
-
-PS.shutdown = function( options ) {
-	// Uncomment the following code line to verify operation:
-
-	// PS.debug( "“Dave. My mind is going. I can feel it.”\n" );
-
-	// Add code here to tidy up when Perlenspiel is about to close.
 };
