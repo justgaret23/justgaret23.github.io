@@ -48,6 +48,7 @@ let G = ( function (){
 	const PLAYER_SPEED = 0.5;
 	let currentPlayerShards = 0;
 	let playerPath = [];
+	let enemyPaths = [];
 
 	//enemies
 	let enemies = [];
@@ -138,103 +139,189 @@ let G = ( function (){
 			this.y = y; //current y position
 			this.lastX = x; //previous x position
 			this.lastY = y; //previous y position
+			this.prevX = 0;
+			this.prevY = 0;
 			this.nextX = x; //next x position
 			this.nextY = y; //next y position
 			this.rotateCounter = 30;
 			this.view = PS.line(this.x,this.y,this.x,this.y);
-			this.speed = 1;
+			this.lastView = [];
 			this.snakeDirections = 0;
 			this.alert = false;
+			this.alertSpeed = 0.75;
+			this.alertPath = [];
+			this.alertTimer = 0;
 			this.sprite = PS.spriteSolid(1,1);
 			PS.spriteSolidColor(this.sprite, SNAKE_MAP_COLOR);
 			PS.spritePlane(this.sprite, ENEMY_PLANE);
-			PS.spriteCollide(this.sprite, enemyTouch);
 			PS.spriteMove(this.sprite, this.x,this.y);
+
 
 			enemies.push(this);
 		}
 
 		update(){
+			this.moveSnake();
 			if(this.alert){
+
+				for(let i=0; i < this.view.length; i++){
+					PS.color(this.view[i][0], this.view[i][1], BACKGROUND_MAP_COLOR);
+				}
+
 				this.nextX = playerX;
 				this.nextY = playerY;
-				PS.statusText("swiggity swoogity im coming for that rat");
 				//Pathfind your way to the player
+				this.makeSnakePath(this.nextX, this.nextY);
+				this.alertTimer++;
+
+				if(this.alertTimer > 180){
+					PS.statusText("tan me high when I'm dead, fred");
+					this.alert = false;
+				}
 			} else {
-				let checkX = this.x;
-				let checkY = this.y;
+				//If the snake is not at its origin, make it return to the origin
+				if(onPatrol(this.x, this.y, this.lastX, this.lastY)){
+					this.makeSnakePath(this.lastX, this.lastY);
+				} else {
+					PS.statusText("ploopy");
+					let checkX = this.x;
+					let checkY = this.y;
+					//If there is a wall directly next to the snake, skip that direction
 
-				//If there is a wall directly next to the snake, skip that direction
-				switch(this.snakeDirections){
-					case 0:
-						this.view = PS.line(this.x,this.y,this.x,this.y);
-						break;
-					case 1:
-						while(checkY > 0){
-							if(PS.color(this.x, checkY) === WALL_MAP_COLOR){
-								break;
+                    switch(this.snakeDirections){
+                        case 0:
+                            this.view = PS.line(this.x,this.y,this.x,this.y);
+                            break;
+                        case 1:
+                        	//up
+							while(PS.data(this.x,checkY) !== WALL_MARKER){
+								checkY--;
 							}
-							//PS.debug("pingas");
-							checkY--;
-							PS.color(this.x, checkY, 0xFF0000);
-						}
-						this.view = PS.line(this.x,this.y, this.x , checkY);
-						break;
-					case 2:
-						//snake looks right
-						while(checkY < gridSizeX - 1){
-							if(PS.color(this.x, checkX) === WALL_MAP_COLOR){
-								break;
+							this.view = PS.line(this.x, this.y, this.x, checkY + 1);
+                            break;
+                        case 2:
+                            //snake looks right
+
+							while(PS.data(checkX,this.y) !== WALL_MARKER){
+								checkX++;
 							}
-							checkX++;
-							PS.color(this.x, checkX, 0xFF0000);
-						}
-						this.view = PS.line(this.x,this.y, this.x , checkX);
-						break;
-					case 3:
-						while(checkY < gridSizeY - 1){
-							if(PS.color(this.x, checkY) === WALL_MAP_COLOR){
-								break;
+							this.view = PS.line(this.x, this.y, checkX-1, this.y);
+
+                            break;
+                        case 3:
+                        	//down
+							while(PS.data(this.x,checkY) !== WALL_MARKER){
+								checkY++;
 							}
-							checkY++;
-							PS.color(this.x, checkY, 0xFF0000);
-						}
-						this.view = PS.line(this.x,this.y, this.x , checkY);
-						break;
-					case 4:
-						//snake looks left
-						while(checkX > 0){
-							if(PS.color(this.x, checkX) === WALL_MAP_COLOR){
-								break;
+							this.view = PS.line(this.x, this.y, this.x, checkY - 1);
+							break;
+                        case 4:
+                            //snake looks left
+
+							while(PS.data(checkX,this.y) !== WALL_MARKER){
+								checkX--;
 							}
-							checkX--;
-							PS.color(this.x, checkX, 0xFF0000);
-						}
-						this.view = PS.line(this.x,this.y, this.x , checkX);
-						break;
-				}
+							this.view = PS.line(this.x, this.y, checkX+1, this.y);
+
+                            break;
+                    }
 
 
-				//check to see if the player interacts with the view
-				for(let i=0; i < this.view.length; i++){
-					if(isPlayerSeen(playerX, playerY, this.view[i][0], this.view[i][1])){
-						this.alert = true;
-						break;
+
+
+                    if(JSON.stringify(this.view) !== JSON.stringify(this.lastView)){
+						for(let i=0; i < this.lastView.length; i++){
+							PS.color(this.lastView[i][0], this.lastView[i][1], BACKGROUND_MAP_COLOR);
+						}
+
+						this.lastView = this.view;
+
+					}
+
+
+					//check to see if the player interacts with the view
+					for(let i=0; i < this.view.length; i++){
+						PS.color(this.view[i][0], this.view[i][1], 0xFF0000);
+					}
+
+					//Update rotational counter as needed
+					this.rotateCounter++;
+					if(this.rotateCounter > 30){
+						if(this.snakeDirections === (4 || 0)){
+							this.snakeDirections = 1;
+						} else {
+							this.snakeDirections++;
+						}
+						this.rotateCounter = 0;
 					}
 				}
+			}
+		}
 
-				//Update rotational counter as needed
-				this.rotateCounter++;
-				if(this.rotateCounter > 30){
-					if(this.snakeDirections === (4 || 0)){
-						this.snakeDirections = 1;
-					} else {
-						this.snakeDirections++;
+		moveSnake(){
+			let dx = 0;
+			let dy = 0;
+			if(this.alertPath.length > 0){
+				let next = this.alertPath[0];
+				let nextX = Math.floor(next[0]);
+				let nextY = Math.floor(next[1]);
+
+				//stop when you run into a wall
+				if(isWall(nextX,nextY)){
+					this.alertPath = [];
+				} else {
+					dx = nextX + 0.5 - this.x;
+					dy = nextY + 0.5 - this.y;
+					if(distance(dx, dy) <= this.alertSpeed){
+						this.alertPath.shift();
 					}
 				}
-
+			}
+			//determine movement speed
+			if(dx !== 0 || dy !== 0){
+				let normalizedVector = this.alertSpeed / distance(dx, dy);
+				dx = normalizedVector * dx;
+				dy = normalizedVector * dy;
 			}
 
+			//collide with walls
+			let checkX = Math.floor(this.x + dx);
+			if(onGrid(checkX, this.y) && isWall(checkX, this.y)){
+				dx = checkX - Math.sign(dx)-this.x + 0.5;
+			}
+
+			let checkY = Math.floor(this.y + dy);
+			if(onGrid(this.x, checkY) && isWall(this.x, checkY)){
+				dy = checkY - Math.sign(dy)-this.y + 0.5;
+			}
+
+			checkX = Math.floor(this.x + dx);
+			checkY = Math.floor(this.y + dy);
+			if(onGrid(checkX, checkY) && isWall(checkX, checkY)){
+				dx = checkY - Math.sign(dy)-this.x + 0.5;
+				dy = checkY - Math.sign(dy)-this.y + 0.5;
+			}
+
+			//update position
+			this.x += dx;
+			this.y += dy;
+			PS.spriteMove(this.sprite, this.x, this.y);
+
+			//Reset alert timer if movement is detected
+			if(this.prevX !== this.x || this.prevY !== this.y){
+				this.alertTimer = 0;
+
+				this.prevX = this.x;
+				this.prevY = this.y;
+			}
+
+
+		}
+
+		makeSnakePath(x,y){
+			let startX = Math.floor(this.x);
+			let startY = Math.floor(this.y);
+			this.alertPath = PS.line(startX, startY, x, y);
 		}
 	}
 
@@ -262,9 +349,20 @@ let G = ( function (){
 			//accept player input
 			movePlayer();
 
+			//Detect alert level
+			if(PS.color(playerX, playerY) === PS.COLOR_RED){
+				PS.statusText("uh oh stinky");
+				for(let i=0; i < enemies.length; i++){
+					let enemy = enemies[i];
+					enemy.alert = true;
+				}
+			}
+
 			//move enemy patterns
 			for(let i=0; i < enemies.length; i++){
 				let enemy = enemies[i];
+				PS.spriteCollide(playerSprite, enemyTouch);
+
 				enemy.update();
 			}
 		}
@@ -312,7 +410,7 @@ let G = ( function (){
 		checkX = Math.floor(playerX + dx);
 		checkY = Math.floor(playerY + dy);
 		if(onGrid(checkX, checkY) && isWall(checkX, checkY)){
-			dx = checkY - Math.sign(dy)-playerY + 0.5;
+			dx = checkY - Math.sign(dy)-playerX + 0.5;
 			dy = checkY - Math.sign(dy)-playerY + 0.5;
 		}
 
@@ -472,6 +570,10 @@ let G = ( function (){
 		return Math.sqrt((x * x) + (y * y));
 	}
 
+	let onPatrol = function(enemyX, enemyY, lastX, lastY){
+		return Math.floor(enemyX) !== lastX || Math.floor(enemyY) !== lastY;
+	}
+
 	/////////////////////////////
 	//Perlenspiel API Functions//
 	/////////////////////////////
@@ -488,8 +590,6 @@ let G = ( function (){
 		PS.gridPlane(PLAYER_PLANE);
 
 		PS.imageLoad("images/betaRatMap.gif", onMapLoad, 1);
-
-		PS.debug(playerX)
 
 		//initialize player sprite
 		playerSprite = PS.spriteSolid(1,1);
