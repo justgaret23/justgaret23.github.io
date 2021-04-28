@@ -372,6 +372,7 @@ let G = ( function (){
 					//Pursue the patrol points continuously
 					let currentTarget = patrolPoints[this.patrolMarker];
 					if(findingTarget(this.x, this.y, currentTarget[0], currentTarget[1])){
+						PS.statusText("I farted in an Arby's deep fryer");
 						this.makePorcupinePath(currentTarget[0], currentTarget[1]);
 					} else {
 						if(this.patrolMarker < patrolPoints.length){
