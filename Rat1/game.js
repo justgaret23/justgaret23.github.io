@@ -25,7 +25,9 @@ let G = ( function (){
 	const SPAWN_MAP_COLOR = 0x00FF00;
 	const DOOR_MAP_COLOR = 0x0000FF;
 	const SNAKE_MAP_COLOR = 0x009900;
+	const PORCUPINE_MAP_COLOR = 0x5b3900;
 	const HUMAN_MAP_COLOR = 0xeec39a;
+	const PATROL_MAP_COLOR = 0xFFFF00;
 
 	//data
 	const WALL_MARKER = "wall";
@@ -55,10 +57,6 @@ let G = ( function (){
 
 	//sprite ids
 	let playerSprite;
-	let humanSprite;
-	let porcupineSprite;
-	let birdSprite;
-	let snakeSprite;
 
 	//grid variables
 	let gridSizeX = 16;
@@ -67,12 +65,33 @@ let G = ( function (){
 	//other variables
 	let loading = false;
 
+	let ZONES = [
+		[
+			[0 , 0],[ -1, -1 ], [ 0, -1 ], [ 1, -1 ],
+			[ -1, 0 ], [ 1, 0 ],
+			[ -1, 1 ], [ 0, 1 ], [ 1, 1 ]
+		],
+		[
+			[ -2, -2 ], [ -1, -2 ], [ 0, -2 ], [ 1, -2 ], [ 2, -2 ],
+			[ -2, -1 ], [ 2, -1 ],
+			[ -2, 0 ], [ 2, 0 ],
+			[ -2, 1 ], [ 2, 1 ],
+			[ -2, 2 ], [ -1, 2 ], [ 0, 2 ], [ 1, 2 ], [ 2, 2 ]
+		],
+		[
+			[ -1, -3 ], [ 0, -3 ], [ 1, -3 ],
+			[ -3, -1 ], [ 3, -1 ],
+			[ -3, 0 ], [ 3, 0 ],
+			[ -3, 1 ], [ 3, 1 ],
+			[ -1, 3 ], [ 0, 3 ], [ 1, 3 ]
+		]
+	];
+
 	//////////////////////
 	//Load patrol routes//
 	//////////////////////
 
-	let aiPoints = [];
-	let aiPointMarker = 0;
+	let patrolPoints = [];
 
 	let enemyTouch = function(s1, p1, s2, p2, type){
 		if(type === PS.SPRITE_OVERLAP){
@@ -180,7 +199,7 @@ let G = ( function (){
 				}
 			} else {
 				//If the snake is not at its origin, make it return to the origin
-				if(onPatrol(this.x, this.y, this.lastX, this.lastY)){
+				if(findingTarget(this.x, this.y, this.lastX, this.lastY)){
 					this.makeSnakePath(this.lastX, this.lastY);
 				} else {
 					PS.statusText("ploopy");
@@ -226,9 +245,7 @@ let G = ( function (){
                             break;
                     }
 
-
-
-
+                    //Compare the arrays to see if the view has changed. If it has, delete the last view
                     if(JSON.stringify(this.view) !== JSON.stringify(this.lastView)){
 						for(let i=0; i < this.lastView.length; i++){
 							PS.color(this.lastView[i][0], this.lastView[i][1], BACKGROUND_MAP_COLOR);
@@ -238,8 +255,7 @@ let G = ( function (){
 
 					}
 
-
-					//check to see if the player interacts with the view
+					//Create the snake's view that enables it to see the player
 					for(let i=0; i < this.view.length; i++){
 						PS.color(this.view[i][0], this.view[i][1], 0xFF0000);
 					}
@@ -314,8 +330,6 @@ let G = ( function (){
 				this.prevX = this.x;
 				this.prevY = this.y;
 			}
-
-
 		}
 
 		makeSnakePath(x,y){
@@ -326,7 +340,113 @@ let G = ( function (){
 	}
 
 	let Porcupine = class{
+		constructor(x,y){
+			this.x = x; //current x position
+			this.y = y; //current y position
+			this.lastX = x; //previous x position
+			this.lastY = y; //previous y position
+			this.alert = false;
+			this.alertSpeed = 0.32;
+			this.alertPath = [];
+			this.alertTimer = 0;
+			this.sprite = PS.spriteSolid(2,2);
+			PS.spriteSolidColor(this.sprite, PORCUPINE_MAP_COLOR);
+			PS.spritePlane(this.sprite, ENEMY_PLANE);
+			PS.spriteMove(this.sprite, this.x,this.y);
 
+
+			enemies.push(this);
+			patrolPoints.push([this.x, this.y]);
+			this.patrolMarker = patrolPoints.length - 1;
+		}
+
+		update(){
+			this.movePorcupine();
+			if(this.alert){
+				this.alertSpeed = 0.65
+			} else {
+				this.alertSpeed = 0.32
+				if(findingTarget(this.x, this.y, this.lastX, this.lastY)){
+					//return porcupine to origin
+				} else {
+					//Pursue the patrol points continuously
+					let currentTarget = patrolPoints[this.patrolMarker];
+					if(findingTarget(this.x, this.y, currentTarget[0], currentTarget[1])){
+						this.makePorcupinePath(currentTarget[0], currentTarget[1]);
+					} else {
+						if(this.patrolMarker < patrolPoints.length){
+							this.patrolMarker += 1;
+						} else {
+							this.patrolMarker = 0;
+						}
+					}
+				}
+			}
+		}
+
+		movePorcupine(){
+			let dx = 0;
+			let dy = 0;
+			if(this.alertPath.length > 0){
+				let next = this.alertPath[0];
+				let nextX = Math.floor(next[0]);
+				let nextY = Math.floor(next[1]);
+
+				//stop when you run into a wall
+				if(isWall(nextX,nextY)){
+					this.alertPath = [];
+				} else {
+					dx = nextX + 0.5 - this.x;
+					dy = nextY + 0.5 - this.y;
+					if(distance(dx, dy) <= this.alertSpeed){
+						this.alertPath.shift();
+					}
+				}
+			}
+			//determine movement speed
+			if(dx !== 0 || dy !== 0){
+				let normalizedVector = this.alertSpeed / distance(dx, dy);
+				dx = normalizedVector * dx;
+				dy = normalizedVector * dy;
+			}
+
+			//collide with walls
+			let checkX = Math.floor(this.x + dx);
+			if(onGrid(checkX, this.y) && isWall(checkX, this.y)){
+				dx = checkX - Math.sign(dx)-this.x + 0.5;
+			}
+
+			let checkY = Math.floor(this.y + dy);
+			if(onGrid(this.x, checkY) && isWall(this.x, checkY)){
+				dy = checkY - Math.sign(dy)-this.y + 0.5;
+			}
+
+			checkX = Math.floor(this.x + dx);
+			checkY = Math.floor(this.y + dy);
+			if(onGrid(checkX, checkY) && isWall(checkX, checkY)){
+				dx = checkY - Math.sign(dy)-this.x + 0.5;
+				dy = checkY - Math.sign(dy)-this.y + 0.5;
+			}
+
+			//update position
+			this.x += dx;
+			this.y += dy;
+			PS.spriteMove(this.sprite, this.x, this.y);
+
+			//Reset alert timer if movement is detected
+			if(this.prevX !== this.x || this.prevY !== this.y){
+				this.alertTimer = 0;
+
+				this.prevX = this.x;
+				this.prevY = this.y;
+			}
+		}
+
+		makePorcupinePath(x,y){
+			let startX = Math.floor(this.x);
+			let startY = Math.floor(this.y);
+			this.alertPath = PS.line(startX, startY, x, y);
+		}
 	}
 
 	let Bird = class{
@@ -513,7 +633,13 @@ let G = ( function (){
 					case SNAKE_MAP_COLOR:
 						new Snake(x,y);
 						break;
-
+					case PORCUPINE_MAP_COLOR:
+						new Porcupine(x,y);
+						patrolPoints.push([x,y]);
+						break;
+					case PATROL_MAP_COLOR:
+						patrolPoints.push([x,y]);
+						break;
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
 						break;
@@ -570,7 +696,7 @@ let G = ( function (){
 		return Math.sqrt((x * x) + (y * y));
 	}
 
-	let onPatrol = function(enemyX, enemyY, lastX, lastY){
+	let findingTarget = function(enemyX, enemyY, lastX, lastY){
 		return Math.floor(enemyX) !== lastX || Math.floor(enemyY) !== lastY;
 	}
 
