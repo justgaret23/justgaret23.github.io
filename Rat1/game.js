@@ -146,7 +146,6 @@ const G = ( function () {
 					this._enemy_path = null;
 					this._enemy_position = 0;
 				}
-				PS.debug(this._enemy_position)
 
 			} else {
 				//this._enemy_touched = false;
@@ -258,7 +257,6 @@ const G = ( function () {
 		if(type === PS.SPRITE_OVERLAP){
 			//pause = true;
 			PS.statusText("Rats! You were devoured!");
-			PS.debug("shit")
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 
@@ -274,7 +272,6 @@ const G = ( function () {
 
 
 			//enemies = [];
-			PS.debug("why")
 
 		}
 	}
@@ -593,7 +590,6 @@ const G = ( function () {
 
 		},
 		touch : function ( x, y ) {
-			PS.debug(PS.data(x,y));
 
 			let path = PS.pathFind( _pathmap, _actor_x, _actor_y, x, y );
 			if ( path.length > 0 ) {
