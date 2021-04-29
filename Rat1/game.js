@@ -581,6 +581,33 @@ const G = ( function () {
 
 	return {
 		init : function () {
+
+			// Change this string to your team name
+			// Use only ALPHABETIC characters
+			// No numbers, spaces or punctuation!
+
+			const TEAM = "pix";
+
+			// Begin with essential setup
+			// Establish initial grid size
+
+			// Install additional initialization code
+			// here as needed
+
+			// PS.dbLogin() must be called at the END
+			// of the PS.init() event handler (as shown)
+			// DO NOT MODIFY THIS FUNCTION CALL
+			// except as instructed
+
+			PS.dbLogin( "imgd2900", TEAM, function ( id, user ) {
+				if ( user === PS.ERROR ) {
+					return PS.dbErase( TEAM );
+				}
+				PS.dbEvent( TEAM, "startup", user );
+				PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
+			}, { active : true } );
+
+
 			// This function is called when the map image is loaded
 
 			// Load the image map in format 1
