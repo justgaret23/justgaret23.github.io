@@ -381,7 +381,7 @@ const G = ( function () {
 		}
 
 		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
-			PS.statusText("fuck, fred. I'm tired")
+			PS.statusText("");
 			for(let i = 0; i < enemies.length; i++){
 				PS.spriteDelete(enemies[i]._enemy_sprite);
 			}
