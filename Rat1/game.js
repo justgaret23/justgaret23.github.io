@@ -67,6 +67,12 @@ const G = ( function () {
 	let _enemy_view_direction = 0;
 	let _enemy_sprite;
 
+	//map variables
+	const MAP_WIDTH = 96;
+	const MAP_HEIGHT = 80;
+	const SEGMENTS_WIDTH = MAP_WIDTH/16;
+	const SEGMENTS_HEIGHT = MAP_HEIGHT/16;
+
 	let _timer_id;
 	let _pathmap;
 	let pause = false;
@@ -126,12 +132,16 @@ const G = ( function () {
 					//this._enemy_position = 0;
 					this._enemy_path = path;
 
+
 					let point = this._enemy_path[ this._enemy_position ];
-					let x = point[ 0 ];
-					let y = point[ 1 ];
+					if(typeof point !== 'undefined'){
+						let x = point[ 0 ];
+						let y = point[ 1 ];
 
 
-					this.enemyPlace( x, y );
+						this.enemyPlace( x, y );
+					}
+
 				} else {
 					this._enemy_touched = false;
 				}
@@ -241,18 +251,6 @@ const G = ( function () {
 		}
 	}
 
-	const _is_wall = function ( x, y ) {
-		let data = _imagemap.data[ ( y * _grid_x ) + x ];
-		return ( data === _MAP_WALL );
-	};
-
-	const _enemy_place = function ( x, y ) {
-		PS.spriteMove( _enemy_sprite, x, y );
-		//PS.alpha(x,y,255);
-		_enemy_x = x;
-		_enemy_y = y;
-	};
-
 	let enemyTouch = function(s1, p1, s2, p2, type){
 		if(type === PS.SPRITE_OVERLAP){
 			//pause = true;
@@ -261,6 +259,7 @@ const G = ( function () {
 			_actor_y = _actor_originY;
 
 			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
+			_actor_path = PS.pathFind( _pathmap, _actor_x, _actor_y, _actor_originX, _actor_originY );
 
 			for(let i = 0; i < enemies.length; i++){
 				PS.spriteMove(enemies[i]._enemy_sprite, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
@@ -276,96 +275,15 @@ const G = ( function () {
 		}
 	}
 
-	const _enemy_view = function(x,y){
-		let oplane = PS.gridPlane();
-		PS.gridPlane(_PLANE_MAP);
-
-		//PS.statusText("ploopy");
-		let checkX = x;
-		let checkY = y;
-		//If there is a wall directly next to the snake, skip that direction
-
-		switch(_enemy_view_direction){
-			case 0:
-				_enemy_sight = PS.line(x,y,x,y);
-				break;
-			case 1:
-				//up
-				while(PS.data(x,checkY) === _MAP_GROUND){
-					checkY--;
-				}
-				_enemy_sight = PS.line(x, y, x, checkY + 1);
-				break;
-			case 2:
-				//snake looks right
-
-				while(PS.data(checkX,y) === _MAP_GROUND){
-					checkX++;
-				}
-				_enemy_sight = PS.line(x, y, checkX-1, y);
-
-				break;
-			case 3:
-				//down
-				while(PS.data(x,checkY) === _MAP_GROUND){
-					checkY++;
-				}
-				_enemy_sight = PS.line(x, y, x, checkY - 1);
-				break;
-			case 4:
-				//snake looks left
-
-				while(PS.data(checkX,y) === _MAP_GROUND){
-					checkX--;
-				}
-				_enemy_sight = PS.line(x, y, checkX+1, y);
-
-				break;
-		}
-
-		//Compare the arrays to see if the view has changed. If it has, delete the last view
-		if(JSON.stringify(_enemy_sight) !== JSON.stringify(_enemy_prev_sight)){
-			for(let i=0; i < _enemy_prev_sight.length; i++){
-
-				PS.color(_enemy_prev_sight[i][0], _enemy_prev_sight[i][1], _DRAW_GROUND);
-				PS.alpha(_enemy_prev_sight[i][0], _enemy_prev_sight[i][1], 255);
-
-			}
-
-			_enemy_prev_sight = _enemy_sight;
-
-		}
-
-		//Create the snake's view that enables it to see the player
-		for(let i=0; i < _enemy_sight.length; i++){
-			PS.color(_enemy_sight[i][0], _enemy_sight[i][1], 0xFF0000);
-		}
-
-		//Update rotational counter as needed
-		_enemy_rotate_counter++;
-		if(_enemy_rotate_counter > 10){
-			if(_enemy_view_direction === (4 || 0)){
-				_enemy_view_direction = 1;
-			} else {
-				_enemy_view_direction++;
-			}
-			_enemy_rotate_counter = 0;
-		}
-
-		PS.gridPlane(oplane);
-	}
-
 	// ========================
 	//GENERAL GAME FUNCTIONS //
 	// ========================
 
 	const _clock = function () {
-		if(pause){
-			 return;
-		}
 
+		//Enemy detection
 		if(PS.color(_actor_x, _actor_y) === PS.COLOR_RED){
-			PS.statusText("obama location");
+			//PS.statusText("obama location");
 			for(let i=0; i < enemies.length; i++){
 				let enemy = enemies[i];
 				let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
@@ -397,53 +315,26 @@ const G = ( function () {
 		//Path functions
 		if ( _actor_path ) {
 			let point = _actor_path[ _actor_position ];
-			let x = point[ 0 ];
-			let y = point[ 1 ];
+			if(typeof point !== 'undefined'){
+				let x = point[ 0 ];
+				let y = point[ 1 ];
 
-			_actor_place( x, y );
+				_actor_place( x, y );
+			}
+
 			_actor_position += 1;
 			if ( _actor_position >= _actor_path.length ) {
 				_actor_path = null;
 				_actor_position = 0;
 			}
 		}
+
+		//Standard enemy behavior
 		for(let i = 0; i < enemies.length; i++){
 			let enemy = enemies[i];
 			enemy.update();
 		}
 
-		/*
-		if(_enemy_path){
-
-			PS.spriteCollide(_actor_sprite, enemyTouch);
-			let path = PS.pathFind( _pathmap, _enemy_x, _enemy_y, _actor_x, _actor_y );
-			if ( path.length > 0 ) {
-				_enemy_position = 0;
-				_enemy_path = path;
-			}
-			PS.statusText("swiggity swoogity im comin for that booty");
-			for(let i=0; i < _enemy_sight.length; i++){
-				PS.color(_enemy_sight[i][0], _enemy_sight[i][1], _DRAW_GROUND);
-			}
-
-			let point = _enemy_path[ _enemy_position ];
-			let x = point[ 0 ];
-			let y = point[ 1 ];
-
-			_enemy_place( x, y );
-			_enemy_position += 1;
-			if ( _enemy_position >= _enemy_path.length ) {
-				_enemy_path = null;
-				_enemy_position = 0;
-			}
-
-
-		} else {
-
-			_enemy_view(_enemy_x, _enemy_y);
-		}
-
-		 */
 	};
 
 	// ==============
@@ -511,7 +402,7 @@ const G = ( function () {
 		PS.gridSize( _grid_x, _grid_y );
 		PS.border( PS.ALL, PS.ALL, 0 );
 
-		//PS.imageBlit(image, 0, 0, {left: 2, top: 2, width: 8, height: 8 });
+		//PS.imageBlit(image, 0, 0, {left: 0, top: 0, width: 16, height: 16 });
 
 		// Translate map pixels to data format expected by _imagemap
 
@@ -630,4 +521,103 @@ const G = ( function () {
 PS.init = G.init;
 PS.touch = G.touch;
 PS.keyDown = G.keyDown;
+
+//code blocks
+
+const _is_wall = function ( x, y ) {
+	let data = _imagemap.data[ ( y * _grid_x ) + x ];
+	return ( data === _MAP_WALL );
+};
+/*
+
+const _enemy_place = function ( x, y ) {
+	PS.spriteMove( _enemy_sprite, x, y );
+	//PS.alpha(x,y,255);
+	_enemy_x = x;
+	_enemy_y = y;
+};
+
+ */
+
+/*
+	const _enemy_view = function(x,y){
+		let oplane = PS.gridPlane();
+		PS.gridPlane(_PLANE_MAP);
+
+		//PS.statusText("ploopy");
+		let checkX = x;
+		let checkY = y;
+		//If there is a wall directly next to the snake, skip that direction
+
+		switch(_enemy_view_direction){
+			case 0:
+				_enemy_sight = PS.line(x,y,x,y);
+				break;
+			case 1:
+				//up
+				while(PS.data(x,checkY) === _MAP_GROUND){
+					checkY--;
+				}
+				_enemy_sight = PS.line(x, y, x, checkY + 1);
+				break;
+			case 2:
+				//snake looks right
+
+				while(PS.data(checkX,y) === _MAP_GROUND){
+					checkX++;
+				}
+				_enemy_sight = PS.line(x, y, checkX-1, y);
+
+				break;
+			case 3:
+				//down
+				while(PS.data(x,checkY) === _MAP_GROUND){
+					checkY++;
+				}
+				_enemy_sight = PS.line(x, y, x, checkY - 1);
+				break;
+			case 4:
+				//snake looks left
+
+				while(PS.data(checkX,y) === _MAP_GROUND){
+					checkX--;
+				}
+				_enemy_sight = PS.line(x, y, checkX+1, y);
+
+				break;
+		}
+
+		//Compare the arrays to see if the view has changed. If it has, delete the last view
+		if(JSON.stringify(_enemy_sight) !== JSON.stringify(_enemy_prev_sight)){
+			for(let i=0; i < _enemy_prev_sight.length; i++){
+
+				PS.color(_enemy_prev_sight[i][0], _enemy_prev_sight[i][1], _DRAW_GROUND);
+				PS.alpha(_enemy_prev_sight[i][0], _enemy_prev_sight[i][1], 255);
+
+			}
+
+			_enemy_prev_sight = _enemy_sight;
+
+		}
+
+		//Create the snake's view that enables it to see the player
+		for(let i=0; i < _enemy_sight.length; i++){
+			PS.color(_enemy_sight[i][0], _enemy_sight[i][1], 0xFF0000);
+		}
+
+		//Update rotational counter as needed
+		_enemy_rotate_counter++;
+		if(_enemy_rotate_counter > 10){
+			if(_enemy_view_direction === (4 || 0)){
+				_enemy_view_direction = 1;
+			} else {
+				_enemy_view_direction++;
+			}
+			_enemy_rotate_counter = 0;
+		}
+
+		PS.gridPlane(oplane);
+	}
+
+	 */
 
