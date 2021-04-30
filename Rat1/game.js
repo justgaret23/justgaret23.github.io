@@ -335,6 +335,7 @@ const G = ( function () {
 			enemy.update();
 		}
 
+
 	};
 
 	// ==============
@@ -496,16 +497,19 @@ const G = ( function () {
 				}
 				PS.dbEvent( TEAM, "startup", user );
 				PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
-			}, { active : true } );
+			}, { active : false } );
 
 
 			// This function is called when the map image is loaded
 
 			// Load the image map in format 1
-			PS.statusText("You're grey! Click on the map to move!");
+			//PS.statusText("You're grey! Click on the map to move!");
+
 
 			PS.imageLoad( "images/rat_level1.gif", onMapLoad, 1 );
 			_timer_id = PS.timerStart( 6, _clock );
+
+
 
 		},
 		touch : function ( x, y ) {
