@@ -11,15 +11,20 @@
 const G = ( function () {
 	// These define the colors assignments used in the .gif map
 
+	let gameClear = false;
+
 	let levelIndexX = 2;
 	let levelIndexY = 2;
 
 	const WALL_COLOR = PS.COLOR_BLACK;
 	const GROUND_COLOR = PS.COLOR_WHITE;
 	const ACTOR_COLOR = PS.COLOR_GREEN;
-	const ENEMY_COLOR = PS.COLOR_RED;
+	const SNAKE_COLOR = PS.COLOR_RED;
+	const HUMAN_COLOR = PS.COLOR_CYAN;
 	const DOOR_COLOR = PS.COLOR_BLUE;
 	const SHARD_COLOR = PS.COLOR_YELLOW;
+	const ELDER_COLOR = PS.COLOR_MAGENTA;
+	const ELDER_TALK_COLOR = 0xb100b1;
 
 	// These define the data used by the pathfinder
 
@@ -27,24 +32,30 @@ const G = ( function () {
 	const _MAP_GROUND = 1;
 	const _MAP_DOOR = 2;
 	const _MAP_SHARD = 3;
+	const _MAP_TALK_ELDER = 4;
+	const _MAP_ELDER = 5;
 
 	// These are the plane assignments
 
 	const _PLANE_MAP = 0;
-	const _PLANE_ENEMY = 1;
-	const _PLANE_ACTOR = 2;
-	const _PLANE_SHARD = 3;
-	const _PLANE_BLOOD = 4;
+	const _PLANE_SHARD = 1;
+	const _PLANE_ENEMY_SIGHT = 2;
+	const _PLANE_ENEMY = 3;
+	const _PLANE_ACTOR = 4;
+	const _PLANE_BLOOD = 5;
+	const _PLANE_ELDER = 6;
 
 	// These are the actual drawing colors for all elements
 
 	const _DRAW_WALL = 0x600000;
 	const _DRAW_GROUND = 0xC0C0C0;
 	const _DRAW_ACTOR = PS.COLOR_GRAY;
-	const _DRAW_ENEMY = 0xC00000;
+	const _DRAW_SNAKE = 0xC00000;
+	const _DRAW_HUMAN = PS.COLOR_CYAN;
 	const _DRAW_FOV = 0xFFFF00;
 	const _DRAW_DOOR = PS.COLOR_BLUE;
 	const _DRAW_SHARD = PS.COLOR_YELLOW;
+	const _DRAW_ELDER = PS.COLOR_MAGENTA;
 
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
 	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL, {} );
@@ -59,6 +70,25 @@ const G = ( function () {
 	let _actor_path = null;
 	let _actor_position;
 	let _actor_sprite;
+	let _actor_moving = false;
+	let moveUp = false;
+	let moveDown = false;
+	let moveLeft = false;
+	let moveRight = false;
+	let _actor_moveX = 0;
+	let _actor_moveY = 0;
+
+	//Amount of shards the player has on them
+	let playerShardsInPossession = 0;
+	let shardsInBase = 0;
+	let totalShards = 4;
+	//We use the coordinates of the level to keep track of where the shards are
+	let shardArray = [];
+	let shardsCarriedArray = [];
+	let shardsCollectedArray = [];
+
+	//talking
+	let shardNotif = false;
 
 	let enemies = [];
 
@@ -82,7 +112,9 @@ const G = ( function () {
 	let transitioning = false;
 	let onInitLoad = false;
 
+	let _player_timer_id;
 	let _timer_id;
+	let checkAdvancedMove
 	let _pathmap;
 	let pause = false;
 
@@ -147,7 +179,170 @@ const G = ( function () {
 			this._enemy_rotate_counter = 0;
 			this._enemy_view_direction = 0;
 			this._enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
-			PS.spriteSolidColor( this._enemy_sprite, _DRAW_ENEMY ); // assign color
+			PS.spriteSolidColor( this._enemy_sprite, _DRAW_SNAKE ); // assign color
+			PS.spritePlane( this._enemy_sprite, _PLANE_ENEMY ); // move to assigned plane
+			PS.spriteMove(this._enemy_sprite, x, y);
+
+			enemies.push(this);
+		}
+
+		update(){
+
+			if(this._enemy_path){
+				let path;
+				if(!this._enemy_touched){
+					PS.spriteCollide(_actor_sprite, enemyTouch);
+					path = PS.pathFind( _pathmap, this._enemy_x, this._enemy_y, _actor_x, _actor_y );
+				} else {
+					path = [];
+				}
+
+				if ( path.length > 0 ) {
+					//this._enemy_position = 0;
+					this._enemy_path = path;
+
+
+					let point = this._enemy_path[ this._enemy_position ];
+					if(typeof point !== 'undefined'){
+						let x = point[ 0 ];
+						let y = point[ 1 ];
+
+
+						this.enemyPlace( x, y );
+					}
+
+				} else {
+					this._enemy_touched = false;
+				}
+				PS.gridPlane(2);
+				for(let i=0; i < this._enemy_sight.length; i++){
+					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_GROUND);
+				}
+				PS.gridPlane(_PLANE_MAP);
+
+
+				this._enemy_position += 1;
+				//PS.debug(this._enemy_position)
+				if ( this._enemy_position >= this._enemy_path.length ) {
+					this._enemy_path = null;
+					this._enemy_position = 0;
+				}
+
+			} else {
+				//this._enemy_touched = false;
+				this.enemyView(this._enemy_x, this._enemy_y);
+			}
+		}
+
+		enemyPlace( x, y ) {
+			PS.spriteMove( this._enemy_sprite, x, y );
+			PS.alpha(x,y,255);
+			_enemy_x = x;
+			_enemy_y = y;
+		};
+
+		enemyView(x,y){
+			let oplane = PS.gridPlane();
+			PS.gridPlane(_PLANE_ENEMY_SIGHT);
+			//PS.color(x,y,_DRAW_GROUND)
+
+			//PS.statusText("ploopy");
+			let checkX = x;
+			let checkY = y;
+			//If there is a wall directly next to the snake, skip that direction
+
+			switch(this._enemy_view_direction){
+				case 0:
+					this._enemy_sight = PS.line(x,y,x,y);
+					break;
+				case 1:
+					//up
+					while(PS.data(x,checkY) === _MAP_GROUND){
+						checkY--;
+					}
+					this._enemy_sight = PS.line(x, y, x, checkY + 1);
+					break;
+				case 2:
+					//snake looks right
+
+					while(PS.data(checkX,y) === _MAP_GROUND){
+						checkX++;
+					}
+					this._enemy_sight = PS.line(x, y, checkX-1, y);
+
+					break;
+				case 3:
+					//down
+					while(PS.data(x,checkY) === _MAP_GROUND){
+						checkY++;
+					}
+					this._enemy_sight = PS.line(x, y, x, checkY - 1);
+					break;
+				case 4:
+					//snake looks left
+
+					while(PS.data(checkX,y) === _MAP_GROUND){
+						checkX--;
+					}
+					this._enemy_sight = PS.line(x, y, checkX+1, y);
+
+					break;
+			}
+
+			//Compare the arrays to see if the view has changed. If it has, delete the last view
+			if(JSON.stringify(this._enemy_sight) !== JSON.stringify(this._enemy_prev_sight)){
+				for(let i=0; i < this._enemy_prev_sight.length; i++){
+
+					PS.color(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], _DRAW_GROUND);
+					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 0);
+
+				}
+
+				this._enemy_prev_sight = this._enemy_sight;
+
+			}
+
+			//Create the snake's view that enables it to see the player
+			for(let i=0; i < this._enemy_sight.length; i++){
+				if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
+					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
+				}
+			}
+
+			//Update rotational counter as needed
+			this._enemy_rotate_counter++;
+			if(this._enemy_rotate_counter > 10){
+				if(this._enemy_view_direction === (4 || 0)){
+					this._enemy_view_direction = 1;
+				} else {
+					this._enemy_view_direction++;
+				}
+				this._enemy_rotate_counter = 0;
+			}
+
+			PS.gridPlane(oplane);
+		}
+	}
+
+	let Human = class{
+		constructor(x,y){
+			this._enemy_x = x;
+			this._enemy_y = y;
+			this._enemy_originX = x;
+			this._enemy_originY = y;
+			this._enemy_path = null;
+			this._enemy_position = 0;
+			this._enemy_touched = false;
+			this._enemy_sight_left = [];
+			this._enemy_sight_right = [];
+			this._enemy_sight = [];
+			this._enemy_sight_range = 3;
+			this._enemy_prev_sight = [];
+			this._enemy_rotate_counter = 0;
+			this._enemy_view_direction = 0;
+			this._enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
+			PS.spriteSolidColor( this._enemy_sprite, _DRAW_SNAKE ); // assign color
 			PS.spritePlane( this._enemy_sprite, _PLANE_ENEMY ); // move to assigned plane
 			PS.spriteMove(this._enemy_sprite, x, y);
 
@@ -209,68 +404,94 @@ const G = ( function () {
 
 		enemyView(x,y){
 			let oplane = PS.gridPlane();
-			PS.gridPlane(_PLANE_MAP);
+			PS.gridPlane(_PLANE_ENEMY_SIGHT);
 			//PS.color(x,y,_DRAW_GROUND)
 
 			//PS.statusText("ploopy");
 			let checkX = x;
 			let checkY = y;
 			//If there is a wall directly next to the snake, skip that direction
+			this._enemy_sight = [];
 
+
+			//Make two mini-lines of sight and connect them
 			switch(this._enemy_view_direction){
 				case 0:
 					this._enemy_sight = PS.line(x,y,x,y);
 					break;
 				case 1:
 					//up
-					while(PS.data(x,checkY) === _MAP_GROUND){
-						checkY--;
-					}
-					this._enemy_sight = PS.line(x, y, x, checkY + 1);
+					this._enemy_sight_left = PS.line(x,y,x - this._enemy_sight_range, y - this._enemy_sight_range);
+					this._enemy_sight_right = PS.line(x,y,x + this._enemy_sight_range, y - this._enemy_sight_range);
 					break;
 				case 2:
 					//snake looks right
 
-					while(PS.data(checkX,y) === _MAP_GROUND){
-						checkX++;
-					}
-					this._enemy_sight = PS.line(x, y, checkX-1, y);
+					this._enemy_sight_left = PS.line(x,y,x + this._enemy_sight_range, y + this._enemy_sight_range);
+					this._enemy_sight_right = PS.line(x,y,x + this._enemy_sight_range, y - this._enemy_sight_range);
 
 					break;
 				case 3:
 					//down
-					while(PS.data(x,checkY) === _MAP_GROUND){
-						checkY++;
-					}
-					this._enemy_sight = PS.line(x, y, x, checkY - 1);
+					this._enemy_sight_left = PS.line(x,y,x + this._enemy_sight_range, y + this._enemy_sight_range);
+					this._enemy_sight_right = PS.line(x,y,x - this._enemy_sight_range, y + this._enemy_sight_range);
 					break;
 				case 4:
 					//snake looks left
 
-					while(PS.data(checkX,y) === _MAP_GROUND){
-						checkX--;
-					}
-					this._enemy_sight = PS.line(x, y, checkX+1, y);
-
+					this._enemy_sight_left = PS.line(x,y,x - this._enemy_sight_range, y - this._enemy_sight_range);
+					this._enemy_sight_right = PS.line(x,y,x - this._enemy_sight_range, y + this._enemy_sight_range);
 					break;
 			}
+
+
+
+
+			//push all arrays onto enemy sight
+			for(let i = 0; i < this._enemy_sight_left.length; i++){
+				this._enemy_sight.push(this._enemy_sight_left[i]);
+			}
+
+			//push all arrays onto enemy sight
+			for(let i = 0; i < this._enemy_sight_right.length; i++){
+				this._enemy_sight.push(this._enemy_sight_right[i]);
+			}
+
+
+			//push the in-betweens
+			if(this._enemy_view_direction !== 0){
+				for(let i = 0; i < this._enemy_sight_range; i++){
+					let left = this._enemy_sight_left[i];
+					let right = this._enemy_sight_right[i];
+
+					let fillSight = PS.line(this._enemy_sight_left[i][0], this._enemy_sight_left[i][1], this._enemy_sight_right[i][0], right[1]);
+
+					for(let i = 0; i < fillSight.length; i++){
+						this._enemy_sight.push(fillSight[i]);
+					}
+
+				}
+			}
+
+
 
 			//Compare the arrays to see if the view has changed. If it has, delete the last view
 			if(JSON.stringify(this._enemy_sight) !== JSON.stringify(this._enemy_prev_sight)){
 				for(let i=0; i < this._enemy_prev_sight.length; i++){
 
 					PS.color(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], _DRAW_GROUND);
-					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
+					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 0);
 
 				}
-
 				this._enemy_prev_sight = this._enemy_sight;
-
 			}
 
 			//Create the snake's view that enables it to see the player
 			for(let i=0; i < this._enemy_sight.length; i++){
-				PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+				if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
+					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
+				}
 			}
 
 			//Update rotational counter as needed
@@ -288,6 +509,7 @@ const G = ( function () {
 		}
 	}
 
+
 	let enemyTouch = function(s1, p1, s2, p2, type){
 		if(type === PS.SPRITE_OVERLAP){
 			//pause = true;
@@ -295,12 +517,16 @@ const G = ( function () {
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 
+			//Take all the shards the player is currently carrying
+			shardsCarriedArray = [];
+
 			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
 			//_actor_path = PS.pathFind( _pathmap, _actor_x, _actor_y, _actor_originX, _actor_originY );
 
 			for(let i = 0; i < enemies.length; i++){
 				PS.spriteMove(enemies[i]._enemy_sprite, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
 				enemies[i]._enemy_position = 0;
+				enemies[i]._enemy_rotate_counter = 0;
 				//enemies[i]._enemy_path = [];
 				enemies[i]._enemy_path = PS.pathFind( _pathmap, enemies[i]._enemy_x, enemies[i]._enemy_y, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
 				enemies[i]._enemy_touched = true;
@@ -316,9 +542,44 @@ const G = ( function () {
 	//GENERAL GAME FUNCTIONS //
 	// ========================
 
+	const _player_clock = function(){
+		if(_actor_moving){
+			actor_step(_actor_moveX, _actor_moveY);
+		}
+
+	}
+
 	const _clock = function () {
 
+		//check to see if all shards were retrieved
+
+
+
+		/////////////////////////////
+		//talk to people, it's cool//
+		/////////////////////////////
+		if(PS.data(_actor_x, _actor_y) === _MAP_TALK_ELDER){
+			if(shardsCarriedArray.length > 1){
+				PS.statusText("Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!");
+				shardNotif = true;
+			} else if(shardsCarriedArray.length === 1){
+				PS.statusText("I'll take that shard off your hands!");
+				shardNotif = true;
+			} else if(!shardNotif && !gameClear){
+				PS.statusText("Bring the eggplant pieces back to me!");
+			} else if(gameClear){
+				PS.statusText("The eternal eggplant is reassembled! Huzzah!");
+			}
+			//Give all of your shards to the elder
+			for(let i = 0; i < shardsCarriedArray.length; i++){
+				shardsCollectedArray.push(shardsCarriedArray[i]);
+			}
+			shardsCarriedArray = [];
+		}
+
 		//Enemy detection
+		let oplane = PS.gridPlane();
+		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		if(PS.color(_actor_x, _actor_y) === PS.COLOR_RED){
 			//PS.statusText("obama location");
 			for(let i=0; i < enemies.length; i++){
@@ -330,6 +591,20 @@ const G = ( function () {
 				}
 			}
 
+		}
+		PS.gridPlane(oplane);
+
+		//Pick up shard
+		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
+			PS.statusText("Eggplant GET!");
+			let oplane = PS.gridPlane();
+			PS.gridPlane(_PLANE_SHARD);
+			PS.color(_actor_x, _actor_y, GROUND_COLOR);
+			PS.alpha(_actor_x,_actor_y, 255);
+			PS.gridPlane(oplane);
+
+			shardsCarriedArray.push([levelIndexX, levelIndexY]);
+			PS.data(_actor_x, _actor_y, _MAP_GROUND);
 		}
 
 		if(PS.data(_actor_x, _actor_y) === _MAP_DOOR){
@@ -424,7 +699,12 @@ const G = ( function () {
 				let data = map.data[ i ];
 				switch ( data ) {
 					case _MAP_GROUND:
+					case _MAP_TALK_ELDER: {
 						color = _DRAW_GROUND;
+						break;
+					}
+					case _MAP_ELDER:
+						color = ELDER_COLOR;
 						break;
 					case _MAP_WALL:
 						color = _shade( _rgb_wall );
@@ -433,6 +713,8 @@ const G = ( function () {
 						color = _DRAW_DOOR;
 						break;
 					case _MAP_SHARD:
+						PS.gridPlane(_PLANE_SHARD);
+						PS.alpha(x,y,255);
 						color = _DRAW_SHARD;
 						break;
 					default:
@@ -489,15 +771,49 @@ const G = ( function () {
 						}
 
 						break;
-					case ENEMY_COLOR:
+					case SNAKE_COLOR:
 						new Snake(x,y);
 
+						break;
+					case HUMAN_COLOR:
+						new Human(x,y);
 						break;
 					case DOOR_COLOR:
 						data = _MAP_DOOR;
 						break;
 					case SHARD_COLOR:
-						data = _MAP_SHARD;
+						//We want to check if the shard has been successfully collected before we spawn it in
+						let shardCollected = false;
+						let shardCarried = false;
+
+						for(let i = 0; i < shardsCarriedArray.length; i++){
+							let currentShard = shardsCarriedArray[i];
+							if(levelIndexX === currentShard[0] && levelIndexY === currentShard[1]){
+								shardCarried = true;
+							}
+						}
+
+						for(let i = 0; i < shardsCollectedArray.length; i++){
+							let currentShard = shardsCollectedArray[i];
+							if(levelIndexX === currentShard[0] && levelIndexY === currentShard[1]){
+								shardCollected = true;
+							}
+						}
+						PS.debug(shardCarried)
+						PS.debug(shardCollected)
+
+						if((!shardCollected && !shardCarried)){
+							PS.debug("fuck me uwu")
+							data = _MAP_SHARD;
+						}
+
+
+						break;
+					case ELDER_TALK_COLOR:
+						data = _MAP_TALK_ELDER;
+						break;
+					case ELDER_COLOR:
+						data = _MAP_ELDER;
 						break;
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
@@ -525,7 +841,7 @@ const G = ( function () {
 		/*
 		_enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
 		PS.spriteSolidColor( _enemy_sprite, _DRAW_ENEMY ); // assign color
-		PS.spritePlane( _enemy_sprite, _PLANE_ENEMY ); // move to assigned plane
+		PS.spritePlane( _enemy_sprite, _PLANE_ENEMY_SIGHT ); // move to assigned plane
 		_enemy_place( _enemy_x, _enemy_y );
 
 		 */
@@ -567,18 +883,98 @@ const G = ( function () {
 			// Load the image map in format 1
 
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
+			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
 
 		},
 		touch : function ( x, y ) {
-
-			let path = PS.pathFind( _pathmap, _actor_x, _actor_y, x, y );
-			if ( path.length > 0 ) {
-				_actor_position = 0;
-				_actor_path = path;
+			PS.debug("Shards carried: " + shardsCarriedArray);
+			PS.debug("Shards collected: " + shardsCollectedArray);
+			for(let i = 0; i < 6; i++){
+				PS.gridPlane(i);
+				PS.debug("Plane " + i + " Color: " + PS.color(x,y));
 			}
+
 		},
 		keyDown : function (key){
+			shardNotif = false;
+			_actor_moving = true;
+
+
+			/*
+			switch ( key ) {
+				case PS.KEY_ARROW_UP:
+				case 119:
+				case 87: {
+					moveUp = true;
+					if(moveRight){
+						_actor_moveX = 1;
+						_actor_moveY = -1;
+					} else if(moveLeft){
+						_actor_moveX = -1;
+						_actor_moveY = -1;
+					} else {
+						_actor_moveX = 0;
+						_actor_moveY = -1;
+					}
+					break;
+				}
+				case PS.KEY_ARROW_DOWN:
+				case 115:
+				case 83: {
+					if(moveRight){
+						_actor_moveX = 1;
+						_actor_moveY = 1;
+					} else if(moveLeft){
+						_actor_moveX = -1;
+						_actor_moveY = 1;
+					} else {
+						_actor_moveX = 0;
+						_actor_moveY = 1;
+					}
+					moveDown = true;
+					break;
+				}
+				case PS.KEY_ARROW_LEFT:
+				case 97:
+				case 65: {
+
+					if(moveUp){
+						_actor_moveX = -1;
+						_actor_moveY = -1;
+					} else if(moveDown){
+						_actor_moveX = -1;
+						_actor_moveY = 1;
+					} else {
+						_actor_moveX = -1;
+						_actor_moveY = 0;
+					}
+					moveLeft = true;
+					break;
+				}
+				case PS.KEY_ARROW_RIGHT:
+				case 100:
+				case 68: {
+					if(moveUp){
+						_actor_moveX = 1;
+						_actor_moveY = -1;
+					} else if(moveDown){
+						_actor_moveX = 1;
+						_actor_moveY = 1;
+					} else {
+						_actor_moveX = 1;
+						_actor_moveY = 0;
+					}
+					moveRight = true;
+					break;
+				}
+			}
+
+			 */
+
+
+
+
 
 			switch ( key ) {
 				case PS.KEY_ARROW_UP:
@@ -607,6 +1003,44 @@ const G = ( function () {
 				}
 			}
 
+
+
+
+
+		},
+		keyUp : function (key){
+
+			switch ( key ) {
+				case PS.KEY_ARROW_UP:
+				case 119:
+				case 87: {
+					moveUp = false;
+					break;
+				}
+				case PS.KEY_ARROW_DOWN:
+				case 115:
+				case 83: {
+					moveDown = false;
+					break;
+				}
+				case PS.KEY_ARROW_LEFT:
+				case 97:
+				case 65: {
+					moveLeft = false;
+					break;
+				}
+				case PS.KEY_ARROW_RIGHT:
+				case 100:
+				case 68: {
+					moveRight = false;
+					break;
+				}
+			}
+
+			if(!moveUp && !moveDown && !moveLeft && !moveRight){
+				_actor_moving = false;
+			}
+
 		}
 	};
 } () );
@@ -614,6 +1048,7 @@ const G = ( function () {
 PS.init = G.init;
 PS.touch = G.touch;
 PS.keyDown = G.keyDown;
+PS.keyUp = G.keyUp;
 
 //code blocks
 

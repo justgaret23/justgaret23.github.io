@@ -502,6 +502,7 @@ const G = ( function () {
 			// This function is called when the map image is loaded
 
 			// Load the image map in format 1
+			PS.statusText("You're grey! Click anywhere on the map to move!");
 
 			PS.imageLoad( "images/rat_level1.gif", onMapLoad, 1 );
 			_timer_id = PS.timerStart( 6, _clock );
