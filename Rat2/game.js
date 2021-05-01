@@ -25,6 +25,7 @@ const G = ( function () {
 	const SHARD_COLOR = PS.COLOR_YELLOW;
 	const ELDER_COLOR = PS.COLOR_MAGENTA;
 	const ELDER_TALK_COLOR = 0xb100b1;
+	const NPC_COLOR = 0x5b5b5b;
 
 	// These define the data used by the pathfinder
 
@@ -32,8 +33,8 @@ const G = ( function () {
 	const _MAP_GROUND = 1;
 	const _MAP_DOOR = 2;
 	const _MAP_SHARD = 3;
-	const _MAP_TALK_ELDER = 4;
-	const _MAP_ELDER = 5;
+	const _MAP_TALK_NPC = 4;
+	const _MAP_NPC = 5;
 
 	// These are the plane assignments
 
@@ -47,18 +48,25 @@ const G = ( function () {
 
 	// These are the actual drawing colors for all elements
 
-	const _DRAW_WALL = 0x600000;
-	const _DRAW_GROUND = 0xC0C0C0;
-	const _DRAW_ACTOR = PS.COLOR_GRAY;
-	const _DRAW_SNAKE = 0xC00000;
-	const _DRAW_HUMAN = PS.COLOR_CYAN;
-	const _DRAW_FOV = 0xFFFF00;
-	const _DRAW_DOOR = PS.COLOR_BLUE;
-	const _DRAW_SHARD = PS.COLOR_YELLOW;
+	//Color schemes:
+	// red/grey
+	// green/light grey
+	// blue/darker grey
+	//grey/brown
+	const _DRAW_WALL = [0x600000, 0x006000, 0x000060];
+	const _DRAW_GROUND = 0x787D88;
+
+
+	const _DRAW_ACTOR = 0x685d5d;
+	const _DRAW_SNAKE = 0x405833;//0x093A1B;
+	const _DRAW_HUMAN = 0x82623B;
+	const _DRAW_FOV = PS.COLOR_YELLOW;//0xB49100;
+	const _DRAW_DOOR = 0x00618e;//0x002F59;
+	const _DRAW_SHARD = 0x41053F;
 	const _DRAW_ELDER = PS.COLOR_MAGENTA;
 
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
-	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL, {} );
+	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL[0], {} );
 
 	let _grid_x;
 	let _grid_y;
@@ -314,7 +322,7 @@ const G = ( function () {
 			//Create the human's view that enables it to see the player
 			for(let i=0; i < this._enemy_sight.length; i++){
 				if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
-					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_FOV);
 					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
 				}
 			}
@@ -351,7 +359,7 @@ const G = ( function () {
 			this._enemy_rotate_counter = 0;
 			this._enemy_view_direction = 0;
 			this._enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
-			PS.spriteSolidColor( this._enemy_sprite, _DRAW_SNAKE ); // assign color
+			PS.spriteSolidColor( this._enemy_sprite, _DRAW_HUMAN ); // assign color
 			PS.spritePlane( this._enemy_sprite, _PLANE_ENEMY ); // move to assigned plane
 			PS.spriteMove(this._enemy_sprite, x, y);
 
@@ -514,7 +522,7 @@ const G = ( function () {
 			for(let i=0; i < this._enemy_sight.length; i++){
 				if(onGrid(this._enemy_sight[i][0], this._enemy_sight[i][1])){
 					if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
-						PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+						PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_FOV);
 						PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
 					}
 				}
@@ -647,7 +655,7 @@ const G = ( function () {
 		/////////////////////////////
 		//talk to people, it's cool//
 		/////////////////////////////
-		if(PS.data(_actor_x, _actor_y) === _MAP_TALK_ELDER){
+		if(PS.data(_actor_x, _actor_y) === _MAP_TALK_NPC){
 			if(shardsCarriedArray.length > 1){
 				PS.statusText("Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!");
 				shardNotif = true;
@@ -669,7 +677,7 @@ const G = ( function () {
 		//Enemy detection
 		let oplane = PS.gridPlane();
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
-		if(PS.color(_actor_x, _actor_y) === PS.COLOR_RED){
+		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
 			//PS.statusText("obama location");
 			for(let i=0; i < enemies.length; i++){
 				let enemy = enemies[i];
@@ -686,10 +694,11 @@ const G = ( function () {
 		//Pick up shard
 		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
 			PS.statusText("Eggplant GET!");
+			PS.gridPlane()
+			PS.color(_actor_x, _actor_y, GROUND_COLOR);
 			let oplane = PS.gridPlane();
 			PS.gridPlane(_PLANE_SHARD);
-			PS.color(_actor_x, _actor_y, GROUND_COLOR);
-			PS.alpha(_actor_x,_actor_y, 255);
+			PS.alpha(_actor_x,_actor_y, 0);
 			PS.gridPlane(oplane);
 
 			shardsCarriedArray.push([levelIndexX, levelIndexY]);
@@ -789,11 +798,11 @@ const G = ( function () {
 				let data = map.data[ i ];
 				switch ( data ) {
 					case _MAP_GROUND:
-					case _MAP_TALK_ELDER: {
+					case _MAP_TALK_NPC: {
 						color = _DRAW_GROUND;
 						break;
 					}
-					case _MAP_ELDER:
+					case _MAP_NPC:
 						color = ELDER_COLOR;
 						break;
 					case _MAP_WALL:
@@ -806,6 +815,9 @@ const G = ( function () {
 						PS.gridPlane(_PLANE_SHARD);
 						PS.alpha(x,y,255);
 						color = _DRAW_SHARD;
+						PS.color(x,y,color);
+						PS.gridPlane(_PLANE_MAP);
+						color = _DRAW_GROUND;
 						break;
 					default:
 						color = PS.COLOR_WHITE;
@@ -908,10 +920,10 @@ const G = ( function () {
 
 						break;
 					case ELDER_TALK_COLOR:
-						data = _MAP_TALK_ELDER;
+						data = _MAP_TALK_NPC;
 						break;
 					case ELDER_COLOR:
-						data = _MAP_ELDER;
+						data = _MAP_NPC;
 						break;
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
@@ -989,17 +1001,18 @@ const G = ( function () {
 
 		},
 		touch : function ( x, y ) {
-			/*
+
 			PS.debug("Shards carried: " + shardsCarriedArray);
 			PS.debug("Shards collected: " + shardsCollectedArray);
 			for(let i = 0; i < 6; i++){
 				PS.gridPlane(i);
 				PS.debug("Plane " + i + " Color: " + PS.color(x,y));
+				PS.debug("Plane " + i + " Alpha: " + PS.alpha(x,y));
 			}
 
-			 */
 
-			PS.debug(enemies);
+
+			//PS.debug(enemies);
 
 		},
 		keyDown : function (key){
