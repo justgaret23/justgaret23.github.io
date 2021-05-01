@@ -63,7 +63,7 @@ const G = ( function () {
 	let _grid_x;
 	let _grid_y;
 
-	let _actor_x;
+	let _actor_x = -1;
 	let _actor_y;
 	let _actor_originX;
 	let _actor_originY;
@@ -77,6 +77,7 @@ const G = ( function () {
 	let moveRight = false;
 	let _actor_moveX = 0;
 	let _actor_moveY = 0;
+	let isDead = false;
 
 	//Amount of shards the player has on them
 	let playerShardsInPossession = 0;
@@ -91,16 +92,15 @@ const G = ( function () {
 	let shardNotif = false;
 
 	let enemies = [];
+	let enemyCoords = [];
+
+	//Enemy IDs:
+	//Snake: 0
+	//Human: 1
+	let enemyTypes = [];
 
 	let _enemy_x;
 	let _enemy_y;
-	let _enemy_path = null;
-	let _enemy_position;
-	let _enemy_sight = [];
-	let _enemy_prev_sight = [];
-	let _enemy_rotate_counter = 0;
-	let _enemy_view_direction = 0;
-	let _enemy_sprite;
 
 	//map variables
 	let gridSizeX = 16;
@@ -114,6 +114,7 @@ const G = ( function () {
 
 	let _player_timer_id;
 	let _timer_id;
+	let reviveCounter = 60;
 	let checkAdvancedMove
 	let _pathmap;
 	let pause = false;
@@ -156,9 +157,15 @@ const G = ( function () {
 	};
 
 	const _actor_place = function ( x, y ) {
-		PS.spriteMove( _actor_sprite, x, y );
-		_actor_x = x;
-		_actor_y = y;
+		if(!isDead){
+			PS.spriteMove( _actor_sprite, x, y );
+			_actor_x = x;
+			_actor_y = y;
+		} else {
+			PS.spriteMove( _actor_sprite, _actor_originX, _actor_originY );
+			_actor_x = _actor_originX;
+			_actor_y = _actor_originY;
+		}
 	};
 
 	///////////////////
@@ -188,10 +195,12 @@ const G = ( function () {
 
 		update(){
 
+
 			if(this._enemy_path){
+				PS.debug("wut")
+				PS.spriteCollide(_actor_sprite, enemyTouch);
 				let path;
 				if(!this._enemy_touched){
-					PS.spriteCollide(_actor_sprite, enemyTouch);
 					path = PS.pathFind( _pathmap, this._enemy_x, this._enemy_y, _actor_x, _actor_y );
 				} else {
 					path = [];
@@ -302,7 +311,7 @@ const G = ( function () {
 
 			}
 
-			//Create the snake's view that enables it to see the player
+			//Create the human's view that enables it to see the player
 			for(let i=0; i < this._enemy_sight.length; i++){
 				if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
 					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
@@ -351,10 +360,11 @@ const G = ( function () {
 
 		update(){
 
+
 			if(this._enemy_path){
+				PS.spriteCollide(_actor_sprite, enemyTouch);
 				let path;
 				if(!this._enemy_touched){
-					PS.spriteCollide(_actor_sprite, enemyTouch);
 					path = PS.pathFind( _pathmap, this._enemy_x, this._enemy_y, _actor_x, _actor_y );
 				} else {
 					path = [];
@@ -377,10 +387,15 @@ const G = ( function () {
 				} else {
 					this._enemy_touched = false;
 				}
+				PS.gridPlane(2);
 				for(let i=0; i < this._enemy_sight.length; i++){
-					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_GROUND);
-				}
+					if(onGrid(this._enemy_sight[i][0], this._enemy_sight[i][1]) &&
+						PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
+						PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_GROUND);
+					}
 
+				}
+				PS.gridPlane(_PLANE_MAP);
 
 				this._enemy_position += 1;
 				//PS.debug(this._enemy_position)
@@ -449,12 +464,18 @@ const G = ( function () {
 
 			//push all arrays onto enemy sight
 			for(let i = 0; i < this._enemy_sight_left.length; i++){
-				this._enemy_sight.push(this._enemy_sight_left[i]);
+				if(onGrid(this._enemy_sight_left[i][0], this._enemy_sight_left[i][1])){
+					this._enemy_sight.push(this._enemy_sight_left[i]);
+				}
+
 			}
 
 			//push all arrays onto enemy sight
 			for(let i = 0; i < this._enemy_sight_right.length; i++){
-				this._enemy_sight.push(this._enemy_sight_right[i]);
+				if(onGrid(this._enemy_sight_right[i][0], this._enemy_sight_right[i][1])){
+
+				}this._enemy_sight.push(this._enemy_sight_right[i]);
+
 			}
 
 
@@ -467,7 +488,10 @@ const G = ( function () {
 					let fillSight = PS.line(this._enemy_sight_left[i][0], this._enemy_sight_left[i][1], this._enemy_sight_right[i][0], right[1]);
 
 					for(let i = 0; i < fillSight.length; i++){
-						this._enemy_sight.push(fillSight[i]);
+						if(onGrid(this._enemy_sight[i][0], this._enemy_sight[i][1])){
+							this._enemy_sight.push(fillSight[i]);
+						}
+
 					}
 
 				}
@@ -478,19 +502,21 @@ const G = ( function () {
 			//Compare the arrays to see if the view has changed. If it has, delete the last view
 			if(JSON.stringify(this._enemy_sight) !== JSON.stringify(this._enemy_prev_sight)){
 				for(let i=0; i < this._enemy_prev_sight.length; i++){
-
-					PS.color(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], _DRAW_GROUND);
-					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 0);
-
+					if(onGrid(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1])){
+						PS.color(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], _DRAW_GROUND);
+						PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 0);
+					}
 				}
 				this._enemy_prev_sight = this._enemy_sight;
 			}
 
 			//Create the snake's view that enables it to see the player
 			for(let i=0; i < this._enemy_sight.length; i++){
-				if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
-					PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
-					PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
+				if(onGrid(this._enemy_sight[i][0], this._enemy_sight[i][1])){
+					if(PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
+						PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], 0xFF0000);
+						PS.alpha(this._enemy_prev_sight[i][0], this._enemy_prev_sight[i][1], 255);
+					}
 				}
 			}
 
@@ -511,17 +537,40 @@ const G = ( function () {
 
 
 	let enemyTouch = function(s1, p1, s2, p2, type){
+
 		if(type === PS.SPRITE_OVERLAP){
+			isDead = true;
 			//pause = true;
 			PS.statusText("Rats! You were devoured!");
-			_actor_x = _actor_originX;
-			_actor_y = _actor_originY;
+			PS.debug("why");
 
-			//Take all the shards the player is currently carrying
-			shardsCarriedArray = [];
+			/*
+			for(let i = 0; i < enemies.length; i++){
+				PS.spriteDelete(enemies[i]._enemy_sprite);
+			}
+			enemies = [];
 
-			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
-			//_actor_path = PS.pathFind( _pathmap, _actor_x, _actor_y, _actor_originX, _actor_originY );
+
+
+			if(enemyCoords.length !== enemyTypes.length){
+				PS.debug("WHAT IS HAPENIONG THE HOUSE IS ON FIRE YOU NERD");
+			}
+
+			//Remake all enemies with original behavior
+			for(let i = 0; i < enemyCoords.length; i++){
+				let coordinate = enemyCoords[i];
+				switch(enemyTypes[i]){
+					case 0:
+						new Snake(coordinate[0], coordinate[1]);
+						break;
+					case 1:
+						new Human(coordinate[0], coordinate[1]);
+						break;
+				}
+			}
+			enemies = [];
+
+			 */
 
 			for(let i = 0; i < enemies.length; i++){
 				PS.spriteMove(enemies[i]._enemy_sprite, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
@@ -531,6 +580,22 @@ const G = ( function () {
 				enemies[i]._enemy_path = PS.pathFind( _pathmap, enemies[i]._enemy_x, enemies[i]._enemy_y, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
 				enemies[i]._enemy_touched = true;
 			}
+
+			_actor_x = _actor_originX;
+			_actor_y = _actor_originY;
+
+			//Take all the shards the player is currently carrying
+			shardsCarriedArray = [];
+
+			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
+
+
+
+			//_actor_path = PS.pathFind( _pathmap, _actor_x, _actor_y, _actor_originX, _actor_originY );
+
+
+
+
 
 
 			//enemies = [];
@@ -542,16 +607,40 @@ const G = ( function () {
 	//GENERAL GAME FUNCTIONS //
 	// ========================
 
+	/**
+	 * Ensures that an operation stays on the grid
+	 * @param x - current x component
+	 * @param y - current y component
+	 * @returns {boolean}
+	 */
+	let onGrid = function(x,y){
+		return (x >= 0 && y >= 0 && x < gridSizeX && y < gridSizeY);
+	}
+
 	const _player_clock = function(){
 		if(_actor_moving){
 			actor_step(_actor_moveX, _actor_moveY);
+		}
+
+		while(reviveCounter < 60 && isDead){
+			reviveCounter++;
+			_actor_x = _actor_originX;
+			_actor_y = _actor_originY;
+		}
+
+		if(reviveCounter >= 60){
+			isDead = false;
+			//PS.statusText("It's tail time!");
 		}
 
 	}
 
 	const _clock = function () {
 
+
 		//check to see if all shards were retrieved
+
+
 
 
 
@@ -667,6 +756,7 @@ const G = ( function () {
 			enemy.update();
 		}
 
+
 	};
 
 	// ==============
@@ -733,6 +823,13 @@ const G = ( function () {
 			return;
 		}
 
+		//If the player sprite exists, be sure to delete it!
+		if(_actor_x !== -1){
+			PS.spriteDelete(_actor_sprite);
+		}
+
+		enemies = [];
+
 
 
 		_mapdata = image; // save map data for later
@@ -773,10 +870,14 @@ const G = ( function () {
 						break;
 					case SNAKE_COLOR:
 						new Snake(x,y);
+						enemyCoords.push([x,y]);
+						enemyTypes.push(0);
 
 						break;
 					case HUMAN_COLOR:
 						new Human(x,y);
+						enemyCoords.push([x,y]);
+						enemyTypes.push(1);
 						break;
 					case DOOR_COLOR:
 						data = _MAP_DOOR;
@@ -799,11 +900,8 @@ const G = ( function () {
 								shardCollected = true;
 							}
 						}
-						PS.debug(shardCarried)
-						PS.debug(shardCollected)
 
 						if((!shardCollected && !shardCarried)){
-							PS.debug("fuck me uwu")
 							data = _MAP_SHARD;
 						}
 
@@ -835,6 +933,8 @@ const G = ( function () {
 		PS.spriteSolidColor( _actor_sprite, _DRAW_ACTOR ); // assign color
 		PS.spritePlane( _actor_sprite, _PLANE_ACTOR ); // move to assigned plane
 		_actor_place( _actor_x, _actor_y );
+
+
 
 		// Set up enemy sprite and place it
 
@@ -883,17 +983,23 @@ const G = ( function () {
 			// Load the image map in format 1
 
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
+
 			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
 
 		},
 		touch : function ( x, y ) {
+			/*
 			PS.debug("Shards carried: " + shardsCarriedArray);
 			PS.debug("Shards collected: " + shardsCollectedArray);
 			for(let i = 0; i < 6; i++){
 				PS.gridPlane(i);
 				PS.debug("Plane " + i + " Color: " + PS.color(x,y));
 			}
+
+			 */
+
+			PS.debug(enemies);
 
 		},
 		keyDown : function (key){
@@ -973,40 +1079,35 @@ const G = ( function () {
 			 */
 
 
-
-
-
-			switch ( key ) {
-				case PS.KEY_ARROW_UP:
-				case 119:
-				case 87: {
-					actor_step( 0, -1 ); // move UP (v = -1)
-					break;
-				}
-				case PS.KEY_ARROW_DOWN:
-				case 115:
-				case 83: {
-					actor_step( 0, 1 ); // move DOWN (v = 1)
-					break;
-				}
-				case PS.KEY_ARROW_LEFT:
-				case 97:
-				case 65: {
-					actor_step( -1, 0 ); // move LEFT (h = -1)
-					break;
-				}
-				case PS.KEY_ARROW_RIGHT:
-				case 100:
-				case 68: {
-					actor_step( 1, 0 ); // move RIGHT (h = 1)
-					break;
+			//courtesy check to ensure a dead player tells no tales
+			if(!isDead){
+				switch ( key ) {
+					case PS.KEY_ARROW_UP:
+					case 119:
+					case 87: {
+						actor_step( 0, -1 ); // move UP (v = -1)
+						break;
+					}
+					case PS.KEY_ARROW_DOWN:
+					case 115:
+					case 83: {
+						actor_step( 0, 1 ); // move DOWN (v = 1)
+						break;
+					}
+					case PS.KEY_ARROW_LEFT:
+					case 97:
+					case 65: {
+						actor_step( -1, 0 ); // move LEFT (h = -1)
+						break;
+					}
+					case PS.KEY_ARROW_RIGHT:
+					case 100:
+					case 68: {
+						actor_step( 1, 0 ); // move RIGHT (h = 1)
+						break;
+					}
 				}
 			}
-
-
-
-
-
 		},
 		keyUp : function (key){
 
