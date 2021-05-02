@@ -35,6 +35,7 @@ const G = ( function () {
 	const _MAP_SHARD = 3;
 	const _MAP_TALK_NPC = 4;
 	const _MAP_NPC = 5;
+	const _MAP_RAT_NPC = 6;
 
 	// These are the plane assignments
 
@@ -64,6 +65,7 @@ const G = ( function () {
 	const _DRAW_DOOR = 0x00618e;//0x002F59;
 	const _DRAW_SHARD = 0x41053F;
 	const _DRAW_ELDER = PS.COLOR_MAGENTA;
+	const _DRAW_NPC = 0x5b5b5b;
 
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
 	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL[0], {} );
@@ -86,6 +88,9 @@ const G = ( function () {
 	let _actor_moveX = 0;
 	let _actor_moveY = 0;
 	let isDead = false;
+	let isTalking = false;
+	let dialogueMarker = 0;
+	let pickedUpRot = false;
 
 	//Amount of shards the player has on them
 	let playerShardsInPossession = 0;
@@ -99,6 +104,7 @@ const G = ( function () {
 	//talking
 	let shardNotif = false;
 
+	let NPCs = [];
 	let enemies = [];
 	let enemyCoords = [];
 
@@ -175,6 +181,83 @@ const G = ( function () {
 			_actor_y = _actor_originY;
 		}
 	};
+
+	//////////////////
+	//NPC Class///////
+	//////////////////
+
+	let NPC = class{
+		constructor(x,y){
+			this.x = x;
+			this.y = y;
+			this.talkArea = [[x-1, y-1], [x-1, y],[x-1, y+1],
+				[x, y+1],[x, y-1],
+				[x+1, y-1],[x+1, y],[x+1, y+1]];
+			this.dialogue = [];
+			this.textPushed = false;
+			this.dialogueTimer = 0;
+			this.canTalk = true;
+			this.ratTalking = false;
+
+			this.sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
+			PS.spriteSolidColor( this.sprite, _DRAW_NPC ); // assign color
+			PS.spritePlane( this.sprite, _PLANE_ELDER ); // move to assigned plane
+			PS.spriteMove(this.sprite, x, y);
+
+			NPCs.push(this);
+		}
+
+		update(){
+			for(let i = 0; i < this.talkArea.length; i++){
+				let space = this.talkArea[i];
+				if(_actor_x === space[0] && _actor_y === space[1] && this.canTalk){
+					if(!this.textPushed){
+						this.pushText();
+					}
+					this.ratTalking = true;
+
+				}
+			}
+		}
+
+		pushText(){
+			let switchString = levelIndexX + "|" + levelIndexY;
+			PS.debug("Level: " + switchString);
+			switch(switchString){
+				case "2|2":
+					this.dialogue.push("Peepee");
+					this.dialogue.push("Poopoo");
+					this.dialogue.push("Papa");
+					break;
+				case "4|0":
+					this.dialogue.push(":)");
+					this.dialogue.push(":) :)");
+					this.dialogue.push(":) :) :)");
+					this.dialogue.push(":) :) :) :) :)");
+					this.dialogue.push(":) :) :) :) :) :) :) :)");
+					break;
+				case "4|1":
+					this.dialogue.push("Good to see you!");
+					this.dialogue.push("This is... the original spot of the Eternal Eggplant?");
+					this.dialogue.push("It looks damaged. I wonder what happened...");
+					this.dialogue.push("...I doubt we have time to speculate...");
+					this.dialogue.push("...I'd hate to interrupt you. Keep on hunting!");
+					break;
+				case "4|3":
+					if(!pickedUpRot){
+						this.dialogue.push("Hey, hey, hey!");
+						this.dialogue.push("I found an eggplant piece in the next room!");
+						this.dialogue.push("You've been looking for those, right?");
+						this.dialogue.push("Go ahead and pick it up!");
+					} else {
+						this.dialogue.push("Hey!");
+						this.dialogue.push("W-why are you looking at me like that?");
+					}
+
+			}
+			this.textPushed = true;
+		}
+	}
 
 	///////////////////
 	// Enemy Classes //
@@ -694,8 +777,8 @@ const G = ( function () {
 		//Pick up shard
 		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
 			PS.statusText("Eggplant GET!");
-			PS.gridPlane()
-			PS.color(_actor_x, _actor_y, GROUND_COLOR);
+			PS.gridPlane(0);
+			PS.color(_actor_x, _actor_y, _DRAW_GROUND);
 			let oplane = PS.gridPlane();
 			PS.gridPlane(_PLANE_SHARD);
 			PS.alpha(_actor_x,_actor_y, 0);
@@ -716,21 +799,42 @@ const G = ( function () {
 
 			//Left screen transition
 			if(_actor_x === 0){
-				_actor_x = gridSizeX-2;
-				levelIndexX -= 1;
+				if(levelIndexX === 0){
+					PS.statusText("You can't abandon your clan now!");
+				} else {
+					_actor_x = gridSizeX-2;
+					levelIndexX -= 1;
+				}
+
 			//Up screen transition
 			} else if(_actor_y === 0){
-				_actor_y = gridSizeY-2;
-				levelIndexY -= 1;
+				if(levelIndexY === 0){
+					PS.statusText("You can't abandon your clan now!");
+				} else {
+					_actor_y = gridSizeY-2;
+					levelIndexY -= 1;
+				}
+
 			//Right screen transition
 			} else if(_actor_x === gridSizeX - 1){
-				_actor_x = 1;
-				levelIndexX += 1;
+				if(levelIndexX === 5){
+					PS.statusText("You can't abandon your clan now!");
+				} else {
+					_actor_x = 1;
+					levelIndexX += 1;
+				}
+
 			//Down Screen transition
 			} else if(_actor_y === gridSizeY - 1){
-				_actor_y = 1;
-				levelIndexY += 1;
+				if(levelIndexY === 5){
+					PS.statusText("You can't abandon your clan now!");
+
+				} else {
+					_actor_y = 1;
+					levelIndexY += 1;
+				}
 			}
+
 
 			//Reset respawn location
 			_actor_originX = _actor_x
@@ -763,6 +867,41 @@ const G = ( function () {
 		for(let i = 0; i < enemies.length; i++){
 			let enemy = enemies[i];
 			enemy.update();
+		}
+
+		//Standard NPC behavior
+		for(let i = 0; i < NPCs.length; i++){
+			let NPC = NPCs[i];
+			NPC.update();
+
+			//if an NPC is talking, do special stuff
+			if(typeof NPC.ratTalking !== 'undefined'){
+				if(NPC.ratTalking){
+					PS.statusText(NPC.dialogue[dialogueMarker]);
+
+					if(dialogueMarker < NPC.dialogue.length){
+						isTalking = true;
+
+
+						if(NPC.dialogueTimer >= 40){
+
+							NPC.dialogueTimer = 0;
+							dialogueMarker++;
+						} else {
+							NPC.dialogueTimer += 1;
+							PS.debug(NPC.dialogueTimer)
+						}
+
+					} else {
+						PS.statusText("");
+						isTalking = false;
+						NPC.canTalk = false;
+						dialogueMarker = 0;
+					}
+					NPC.ratTalking = false;
+				}
+			}
+
 		}
 
 
@@ -924,6 +1063,9 @@ const G = ( function () {
 						break;
 					case ELDER_COLOR:
 						data = _MAP_NPC;
+						break;
+					case NPC_COLOR:
+						new NPC(x,y);
 						break;
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
@@ -1093,7 +1235,7 @@ const G = ( function () {
 
 
 			//courtesy check to ensure a dead player tells no tales
-			if(!isDead){
+			if(!isDead && !isTalking){
 				switch ( key ) {
 					case PS.KEY_ARROW_UP:
 					case 119:
@@ -1120,6 +1262,8 @@ const G = ( function () {
 						break;
 					}
 				}
+			} else if(isTalking){
+				dialogueMarker += 1;
 			}
 		},
 		keyUp : function (key){
