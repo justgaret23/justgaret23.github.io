@@ -225,9 +225,14 @@ const G = ( function () {
 			PS.debug("Level: " + switchString);
 			switch(switchString){
 				case "2|2":
-					this.dialogue.push("Peepee");
-					this.dialogue.push("Poopoo");
-					this.dialogue.push("Papa");
+					this.dialogue.push("You've awakened just in time.");
+					this.dialogue.push("There may yet be hope for our clan.");
+					this.dialogue.push("Our scouts have discovered crucial artifacts!");
+					this.dialogue.push("These may be scraps of the Eternal Eggplant.");
+					this.dialogue.push("A fabled herb that can lead us to prosperity.");
+					this.dialogue.push("Pink Rat, I will trust you with gathering them.");
+					this.dialogue.push("Find these scraps and bring us fortune.");
+					this.dialogue.push("But beware the predators outside our walls...");
 					break;
 				case "4|0":
 					this.dialogue.push(":)");
@@ -237,21 +242,22 @@ const G = ( function () {
 					this.dialogue.push(":) :) :) :) :) :) :) :)");
 					break;
 				case "4|1":
-					this.dialogue.push("Good to see you!");
-					this.dialogue.push("This is... the original spot of the Eternal Eggplant?");
+					this.dialogue.push("Good to see you, Pink!");
+					this.dialogue.push("These ruins look kinda interesting.");
+					this.dialogue.push("Maybe they used to house something important?")
 					this.dialogue.push("It looks damaged. I wonder what happened...");
 					this.dialogue.push("...I doubt we have time to speculate...");
 					this.dialogue.push("...I'd hate to interrupt you. Keep on hunting!");
 					break;
 				case "4|3":
 					if(!pickedUpRot){
-						this.dialogue.push("Hey, hey, hey!");
+						this.dialogue.push("Hey, hey, hey, Pinkie!");
 						this.dialogue.push("I found an eggplant piece in the next room!");
 						this.dialogue.push("You've been looking for those, right?");
 						this.dialogue.push("Go ahead and pick it up!");
 					} else {
 						this.dialogue.push("Hey!");
-						this.dialogue.push("W-why are you looking at me like that?");
+						this.dialogue.push("..eh? W-why are you looking at me like that?");
 					}
 
 			}
@@ -872,6 +878,7 @@ const G = ( function () {
 		//Standard NPC behavior
 		for(let i = 0; i < NPCs.length; i++){
 			let NPC = NPCs[i];
+			let lastDialogueMarker = dialogueMarker;
 			NPC.update();
 
 			//if an NPC is talking, do special stuff
@@ -1264,6 +1271,10 @@ const G = ( function () {
 				}
 			} else if(isTalking){
 				dialogueMarker += 1;
+				for(let i = 0; i < NPCs.length; i++){
+					let NPC = NPCs[i];
+					NPC.dialogueTimer = 0;
+				}
 			}
 		},
 		keyUp : function (key){
