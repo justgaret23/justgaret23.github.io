@@ -240,7 +240,7 @@ const G = ( function () {
 							this.dialogue.push("Pink Rat, I will trust you with gathering them.");
 							this.dialogue.push("Deliver your findings to the purple rat.");
 							this.dialogue.push("Find these six scraps and bring us fortune.");
-							this.dialogue.push("But beware the predators outside our walls...");
+							this.dialogue.push("But beware the monsters outside our walls...");
 							break;
 						case 1:
 							this.dialogue.push("5 scraps remain until we achieve prosperity.");
