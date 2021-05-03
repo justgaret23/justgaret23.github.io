@@ -58,13 +58,13 @@ const G = ( function () {
 	const _DRAW_GROUND = 0x787D88;
 
 
-	const _DRAW_ACTOR = 0x685d5d;
+	const _DRAW_ACTOR = PS.COLOR_MAGENTA;
 	const _DRAW_SNAKE = 0x405833;//0x093A1B;
 	const _DRAW_HUMAN = 0x82623B;
 	const _DRAW_FOV = PS.COLOR_YELLOW;//0xB49100;
 	const _DRAW_DOOR = 0x00618e;//0x002F59;
 	const _DRAW_SHARD = 0x41053F;
-	const _DRAW_ELDER = PS.COLOR_MAGENTA;
+	const _DRAW_ELDER = 0x41053F;
 	const _DRAW_NPC = 0x5b5b5b;
 
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
@@ -91,6 +91,7 @@ const G = ( function () {
 	let isTalking = false;
 	let dialogueMarker = 0;
 	let pickedUpRot = false;
+	let isDetected = false;
 
 	//Amount of shards the player has on them
 	let playerShardsInPossession = 0;
@@ -100,6 +101,8 @@ const G = ( function () {
 	let shardArray = [];
 	let shardsCarriedArray = [];
 	let shardsCollectedArray = [];
+
+	let giverTalk = false;
 
 	//talking
 	let shardNotif = false;
@@ -212,6 +215,8 @@ const G = ( function () {
 				let space = this.talkArea[i];
 				if(_actor_x === space[0] && _actor_y === space[1] && this.canTalk){
 					if(!this.textPushed){
+						let talkPicker = PS.random(5);
+						PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
 						this.pushText();
 					}
 					this.ratTalking = true;
@@ -225,14 +230,40 @@ const G = ( function () {
 			PS.debug("Level: " + switchString);
 			switch(switchString){
 				case "2|2":
-					this.dialogue.push("You've awakened just in time.");
-					this.dialogue.push("There may yet be hope for our clan.");
-					this.dialogue.push("Our scouts have discovered crucial artifacts!");
-					this.dialogue.push("These may be scraps of the Eternal Eggplant.");
-					this.dialogue.push("A fabled herb that can lead us to prosperity.");
-					this.dialogue.push("Pink Rat, I will trust you with gathering them.");
-					this.dialogue.push("Find these scraps and bring us fortune.");
-					this.dialogue.push("But beware the predators outside our walls...");
+					switch(shardsCollectedArray.length){
+						case 0:
+							this.dialogue.push("You've awakened just in time.");
+							this.dialogue.push("There may yet be hope for our clan.");
+							this.dialogue.push("Our scouts have discovered crucial artifacts!");
+							this.dialogue.push("These may be scraps of the Eternal Eggplant.");
+							this.dialogue.push("A fabled herb that can lead us to prosperity.");
+							this.dialogue.push("Pink Rat, I will trust you with gathering them.");
+							this.dialogue.push("Deliver your findings to the purple rat.");
+							this.dialogue.push("Find these six scraps and bring us fortune.");
+							this.dialogue.push("But beware the predators outside our walls...");
+							break;
+						case 1:
+							this.dialogue.push("5 scraps remain until we achieve prosperity.");
+							break;
+						case 2:
+							this.dialogue.push("4 scraps remain until we achieve prosperity.");
+							break;
+						case 3:
+							this.dialogue.push("3 scraps remain until we achieve prosperity.");
+							break;
+						case 4:
+							this.dialogue.push("2 scraps remain until we achieve prosperity.");
+							break;
+						case 5:
+							this.dialogue.push("1 scrap remains until we achieve prosperity.");
+							break;
+						case 6:
+							this.dialogue.push("Congruatulations! You cleared the game!.");
+							break;
+
+
+					}
+
 					break;
 				case "4|0":
 					this.dialogue.push(":)");
@@ -294,7 +325,6 @@ const G = ( function () {
 
 
 			if(this._enemy_path){
-				PS.debug("wut")
 				PS.spriteCollide(_actor_sprite, enemyTouch);
 				let path;
 				if(!this._enemy_touched){
@@ -634,40 +664,20 @@ const G = ( function () {
 
 
 	let enemyTouch = function(s1, p1, s2, p2, type){
+		let oplane = PS.gridPlane();
 
-		if(type === PS.SPRITE_OVERLAP){
+		PS.gridPlane(_PLANE_ENEMY);
+
+		//Do an additional check to see if the color matches so phantom sprites don't trigger unwanted collision
+		if(type === PS.SPRITE_OVERLAP && (PS.color(_actor_x,_actor_y) === _DRAW_SNAKE || PS.color(_actor_x,_actor_y) === _DRAW_HUMAN) ){
+			PS.gridPlane(oplane);
 			isDead = true;
+			isDetected = false;
 			//pause = true;
 			PS.statusText("Rats! You were devoured!");
-			PS.debug("why");
+			let deathPicker = PS.random(3);
+			PS.audioPlay("RatDeath" + deathPicker, {path: "audio/", volume: 0.3});
 
-			/*
-			for(let i = 0; i < enemies.length; i++){
-				PS.spriteDelete(enemies[i]._enemy_sprite);
-			}
-			enemies = [];
-
-
-
-			if(enemyCoords.length !== enemyTypes.length){
-				PS.debug("WHAT IS HAPENIONG THE HOUSE IS ON FIRE YOU NERD");
-			}
-
-			//Remake all enemies with original behavior
-			for(let i = 0; i < enemyCoords.length; i++){
-				let coordinate = enemyCoords[i];
-				switch(enemyTypes[i]){
-					case 0:
-						new Snake(coordinate[0], coordinate[1]);
-						break;
-					case 1:
-						new Human(coordinate[0], coordinate[1]);
-						break;
-				}
-			}
-			enemies = [];
-
-			 */
 
 			for(let i = 0; i < enemies.length; i++){
 				PS.spriteMove(enemies[i]._enemy_sprite, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
@@ -681,8 +691,6 @@ const G = ( function () {
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 
-			//Take all the shards the player is currently carrying
-			shardsCarriedArray = [];
 
 			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
 
@@ -698,6 +706,7 @@ const G = ( function () {
 			//enemies = [];
 
 		}
+		PS.gridPlane(oplane);
 	}
 
 	// ========================
@@ -745,6 +754,12 @@ const G = ( function () {
 		//talk to people, it's cool//
 		/////////////////////////////
 		if(PS.data(_actor_x, _actor_y) === _MAP_TALK_NPC){
+			if(!giverTalk){
+				let talkPicker = PS.random(5);
+				PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
+				giverTalk = true;
+			}
+
 			if(shardsCarriedArray.length > 1){
 				PS.statusText("Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!");
 				shardNotif = true;
@@ -761,13 +776,18 @@ const G = ( function () {
 				shardsCollectedArray.push(shardsCarriedArray[i]);
 			}
 			shardsCarriedArray = [];
+		} else {
+			giverTalk = false;
 		}
 
 		//Enemy detection
 		let oplane = PS.gridPlane();
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
-			//PS.statusText("obama location");
+			if(!isDetected){
+				PS.audioPlay("piano_a0");
+				isDetected = true;
+			}
 			for(let i=0; i < enemies.length; i++){
 				let enemy = enemies[i];
 				let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
@@ -782,6 +802,7 @@ const G = ( function () {
 
 		//Pick up shard
 		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
+			PS.audioPlay("fx_powerup1");
 			PS.statusText("Eggplant GET!");
 			PS.gridPlane(0);
 			PS.color(_actor_x, _actor_y, _DRAW_GROUND);
@@ -795,6 +816,7 @@ const G = ( function () {
 		}
 
 		if(PS.data(_actor_x, _actor_y) === _MAP_DOOR){
+			isDetected = false;
 
 			onInitLoad = true;
 			PS.statusText("");
@@ -802,6 +824,11 @@ const G = ( function () {
 				PS.spriteDelete(enemies[i]._enemy_sprite);
 			}
 			enemies = [];
+
+			for(let i = 0; i < NPCs.length; i++){
+				PS.spriteDelete(NPCs[i].sprite);
+			}
+			NPCs = [];
 
 			//Left screen transition
 			if(_actor_x === 0){
@@ -884,6 +911,7 @@ const G = ( function () {
 			//if an NPC is talking, do special stuff
 			if(typeof NPC.ratTalking !== 'undefined'){
 				if(NPC.ratTalking){
+					//PS.keyRepeat(PS.DEFAULT, PS.DEFAULT, PS.DEFAULT);
 					PS.statusText(NPC.dialogue[dialogueMarker]);
 
 					if(dialogueMarker < NPC.dialogue.length){
@@ -906,6 +934,8 @@ const G = ( function () {
 						dialogueMarker = 0;
 					}
 					NPC.ratTalking = false;
+				} else {
+					//PS.keyRepeat(PS.DEFAULT, 6, PS.DEFAULT);
 				}
 			}
 
@@ -949,7 +979,7 @@ const G = ( function () {
 						break;
 					}
 					case _MAP_NPC:
-						color = ELDER_COLOR;
+						color = _DRAW_ELDER;
 						break;
 					case _MAP_WALL:
 						color = _shade( _rgb_wall );
@@ -987,6 +1017,7 @@ const G = ( function () {
 		}
 
 		enemies = [];
+		NPCs = [];
 
 
 
@@ -1142,6 +1173,8 @@ const G = ( function () {
 			// This function is called when the map image is loaded
 
 			// Load the image map in format 1
+
+			//PS.keyRepeat(PS.DEFAULT, 6, PS.DEFAULT);
 
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
