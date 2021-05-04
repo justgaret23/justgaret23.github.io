@@ -1166,7 +1166,7 @@ const G = ( function () {
 					return PS.dbErase( TEAM );
 				}
 				PS.dbEvent( TEAM, "startup", user );
-				PS.dbSave( TEAM, PS.CURRENT, { discard : true } );
+				PS.dbSend( TEAM, PS.CURRENT, { discard : true } );
 			}, { active : true } );
 
 
