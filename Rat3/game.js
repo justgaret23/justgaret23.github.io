@@ -93,6 +93,7 @@ const G = ( function () {
 	let collectDialogueTimer = 0;
 	let pickedUpRot = false;
 	let isDetected = false;
+	let talkedToElder = false;
 
 	//Amount of shards the player has on them
 	let playerShardsInPossession = 0;
@@ -235,7 +236,8 @@ const G = ( function () {
 				case "2|2":
 					switch(shardsCollectedArray.length){
 						case 0:
-							this.dialogue.push("You've awakened just in time.");
+							this.dialogue.push("We need the six vegetables to survive.");
+							/*
 							this.dialogue.push("There may yet be hope for our clan.");
 							this.dialogue.push("Our scouts have discovered crucial artifacts!");
 							this.dialogue.push("These may be scraps of the Eternal Eggplant.");
@@ -244,6 +246,9 @@ const G = ( function () {
 							this.dialogue.push("Deliver your findings to the purple rat.");
 							this.dialogue.push("Find these six scraps and bring us fortune.");
 							this.dialogue.push("But beware the monsters outside our walls...");
+
+							 */
+							talkedToElder = true;
 							break;
 						case 1:
 							this.dialogue.push("5 scraps remain until we achieve prosperity.");
@@ -268,12 +273,11 @@ const G = ( function () {
 					}
 
 					break;
+				case "3|4":
+					this.dialogue.push("Is there no other way forward?");
+					break;
 				case "4|0":
-					this.dialogue.push(":)");
-					this.dialogue.push(":) :)");
-					this.dialogue.push(":) :) :)");
-					this.dialogue.push(":) :) :) :) :)");
-					this.dialogue.push(":) :) :) :) :) :) :) :)");
+					this.dialogue.push("");
 					break;
 				case "4|1":
 					this.dialogue.push("Good to see you, Pink!");
@@ -285,13 +289,9 @@ const G = ( function () {
 					break;
 				case "4|3":
 					if(!pickedUpRot){
-						this.dialogue.push("Hey, hey, hey, Pinkie!");
-						this.dialogue.push("I found an eggplant piece in the next room!");
-						this.dialogue.push("You've been looking for those, right?");
-						this.dialogue.push("Go ahead and pick it up!");
+						this.dialogue.push("There's an eggplant piece in the next room!");
 					} else {
-						this.dialogue.push("Hey!");
-						this.dialogue.push("..eh? W-why are you looking at me like that?");
+						this.dialogue.push("W-why are you looking at me like that?");
 					}
 
 			}
@@ -312,6 +312,7 @@ const G = ( function () {
 			this._enemy_path = null;
 			this._enemy_position = 0;
 			this._enemy_touched = false;
+			this._enemy_sight = [];
 			this._enemy_sight = [];
 			this._enemy_prev_sight = [];
 			this._enemy_rotate_counter = 0;
@@ -746,7 +747,12 @@ const G = ( function () {
 
 	const _clock = function () {
 		if(statusLine === "" && collectDialogueTimer === 0){
-			PS.statusText("Eggplants on hand: " + shardsCarriedArray.length + " | Eggplants collected: " + shardsCollectedArray.length);
+			if(!talkedToElder){
+				PS.statusText("Use the arrow keys/WSAD to move.")
+			} else {
+				PS.statusText("Eggplants on hand: " + shardsCarriedArray.length + " | Eggplants collected: " + shardsCollectedArray.length);
+			}
+
 		} else {
 			PS.statusText(statusLine);
 		}
@@ -778,10 +784,10 @@ const G = ( function () {
 				statusLine = "Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!";
 				shardNotif = true;
 			} else if(shardsCarriedArray.length === 1){
-				statusLine = "I'll take that shard off your hands!";
+				statusLine = "I'll take that off your hands!";
 				shardNotif = true;
 			} else if(!shardNotif && !gameClear){
-				statusLine = "Bring the eggplant pieces back to me!";
+				statusLine = "Bring them to me! They look like me!";
 			} else if(gameClear){
 				statusLine = "The eternal eggplant is reassembled! Huzzah!";
 			}
@@ -939,6 +945,8 @@ const G = ( function () {
 
 							NPC.dialogueTimer = 0;
 							dialogueMarker++;
+							let talkPicker = PS.random(5);
+							PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
 						} else {
 							NPC.dialogueTimer += 1;
 							PS.debug(NPC.dialogueTimer)
@@ -1023,6 +1031,7 @@ const G = ( function () {
 	};
 
 	const onMapLoad = function ( image ) {
+		//check for errors
 		if ( image === PS.ERROR ) {
 			PS.debug( "onMapLoad(): image load error\n" );
 			return;
@@ -1033,6 +1042,7 @@ const G = ( function () {
 			PS.spriteDelete(_actor_sprite);
 		}
 
+		//reset object instance arrays
 		enemies = [];
 		NPCs = [];
 
@@ -1045,6 +1055,7 @@ const G = ( function () {
 		_imagemap.width = _grid_x = image.width;
 		_imagemap.height = _grid_y = image.height;
 
+		//initialize grid and borders
 		PS.gridSize( _grid_x, _grid_y );
 		PS.border( PS.ALL, PS.ALL, 0 );
 
@@ -1134,7 +1145,8 @@ const G = ( function () {
 
 		// Now we can complete the initialization
 
-		_draw_map( _imagemap );
+		//_draw_map( _imagemap );
+		PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
 
 		// Set up actor sprite and place it
 
@@ -1158,6 +1170,24 @@ const G = ( function () {
 		_pathmap = PS.pathMap( _imagemap );
 	};
 
+	let onColorLoad = function(image) {
+
+		if ( image === PS.ERROR ) {
+			PS.debug( "onMapLoad(): image load error\n" );
+			return;
+		}
+
+		let i = 0;
+
+		for ( let y = 0; y < _grid_y; y += 1 ) {
+			for ( let x = 0; x < _grid_x; x += 1 ) {
+				let pixel = image.data[i];
+				PS.color(x,y,pixel);
+
+				i += 1;
+			}
+		}
+	}
 	return {
 		init : function () {
 
@@ -1321,6 +1351,8 @@ const G = ( function () {
 				}
 			} else if(isTalking){
 				dialogueMarker += 1;
+				let talkPicker = PS.random(5);
+				PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
 				for(let i = 0; i < NPCs.length; i++){
 					let NPC = NPCs[i];
 					NPC.dialogueTimer = 0;
