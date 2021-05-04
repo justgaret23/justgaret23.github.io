@@ -134,6 +134,7 @@ const G = ( function () {
 	let statusLine = "";
 
 	let _player_timer_id;
+	let _enemy_timer_id;
 	let _timer_id;
 	let reviveCounter = 60;
 	let checkAdvancedMove
@@ -745,6 +746,60 @@ const G = ( function () {
 
 	}
 
+	const _enemy_clock = function(){
+
+		//Enemy sight detection
+		let oplane = PS.gridPlane();
+
+		PS.gridPlane(_PLANE_ENEMY);
+		for(let i = 0; i < enemies.length; i++){
+			let enemy = enemies[i];
+			if(_actor_x === enemy._enemy_x && _actor_y === enemy._enemy_y){
+				if(!isDetected){
+					PS.audioPlay("piano_a0");
+					isDetected = true;
+				}
+				for(let i=0; i < enemies.length; i++){
+					let enemy = enemies[i];
+					let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
+					if ( path.length > 0 ) {
+						enemy._enemy_position = 0;
+						enemy._enemy_path = path;
+					}
+				}
+			}
+		}
+
+
+		PS.gridPlane(_PLANE_ENEMY_SIGHT);
+		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
+			if(!isDetected){
+				PS.audioPlay("piano_a0");
+				isDetected = true;
+			}
+			for(let i=0; i < enemies.length; i++){
+				let enemy = enemies[i];
+				let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
+				if ( path.length > 0 ) {
+					enemy._enemy_position = 0;
+					enemy._enemy_path = path;
+				}
+			}
+		}
+		PS.gridPlane(oplane);
+
+		if(isDetected){
+
+		}
+
+		//Standard enemy behavior
+		for(let i = 0; i < enemies.length; i++){
+			let enemy = enemies[i];
+			enemy.update();
+		}
+
+	}
+
 	const _clock = function () {
 		if(statusLine === "" && collectDialogueTimer === 0){
 			if(!talkedToElder){
@@ -801,26 +856,6 @@ const G = ( function () {
 		} else {
 			giverTalk = false;
 		}
-
-		//Enemy detection
-		let oplane = PS.gridPlane();
-		PS.gridPlane(_PLANE_ENEMY_SIGHT);
-		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
-			if(!isDetected){
-				PS.audioPlay("piano_a0");
-				isDetected = true;
-			}
-			for(let i=0; i < enemies.length; i++){
-				let enemy = enemies[i];
-				let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
-				if ( path.length > 0 ) {
-					enemy._enemy_position = 0;
-					enemy._enemy_path = path;
-				}
-			}
-
-		}
-		PS.gridPlane(oplane);
 
 		//Pick up shard
 		if(PS.data(_actor_x, _actor_y) === _MAP_SHARD){
@@ -917,12 +952,6 @@ const G = ( function () {
 				_actor_path = null;
 				_actor_position = 0;
 			}
-		}
-
-		//Standard enemy behavior
-		for(let i = 0; i < enemies.length; i++){
-			let enemy = enemies[i];
-			enemy.update();
 		}
 
 		//Standard NPC behavior
@@ -1227,6 +1256,7 @@ const G = ( function () {
 
 			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
+			_enemy_timer_id = PS.timerStart(6, _enemy_clock);
 
 		},
 		touch : function ( x, y ) {
