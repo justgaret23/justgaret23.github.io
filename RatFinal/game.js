@@ -188,7 +188,15 @@ const G = ( function () {
 		return ( data === _MAP_WALL || data === _MAP_RAT_NPC || data === _MAP_NPC );
 	};
 
+	/**
+	 * Helper function that moves the actor's position
+	 * @param x - x location of the actor
+	 * @param y - y location of the actor
+	 * @private
+	 */
 	const _actor_place = function ( x, y ) {
+		//If the player is not dead, allow movement
+		//If the player is dead, force them back at the entry point of the current screen
 		if(!isDead){
 			PS.spriteMove( _actor_sprite, x, y );
 			_actor_x = x;
@@ -200,14 +208,18 @@ const G = ( function () {
 		}
 	};
 
-	//////////////////
-	//NPC Class///////
-	//////////////////
+	/////////////
+	//NPC Class//
+	/////////////
 
+	/**
+	 * An NPC you can talk to on the map
+	 * @type {NPC}
+	 */
 	let NPC = class{
 		constructor(x,y){
-			this.x = x;
-			this.y = y;
+			this.x = x; //NPC x position
+			this.y = y; //NPC y position
 			this.talkArea = [[x-1, y-1], [x-1, y],[x-1, y+1],
 				[x, y+1],[x, y-1],
 				[x+1, y-1],[x+1, y],[x+1, y+1]];
@@ -225,7 +237,11 @@ const G = ( function () {
 			NPCs.push(this);
 		}
 
+		/**
+		 * Runs everu timer tick
+		 */
 		update(){
+			//check the entirity of the talk area to see if an NPC can talk
 			for(let i = 0; i < this.talkArea.length; i++){
 				let space = this.talkArea[i];
 				if(_actor_x === space[0] && _actor_y === space[1] && this.canTalk){
@@ -240,10 +256,15 @@ const G = ( function () {
 			}
 		}
 
+		/**
+		 * Pushes all necessary dialogue to the status line
+		 */
 		pushText(){
+			//We make a string out of the current x and y index of the level and create a switch case using it
 			let switchString = levelIndexX + "|" + levelIndexY;
 			switch(switchString){
 				case "2|2":
+					//NPC dialogue changes depending on how many shards are collected
 					switch(shardsCollectedArray.length){
 						case 0:
 							this.dialogue.push("We need the six vegetables to survive.");
@@ -315,6 +336,7 @@ const G = ( function () {
 					}
 
 			}
+			//Boolean to prevent pushing text every active frame
 			this.textPushed = true;
 		}
 	}
@@ -670,6 +692,14 @@ const G = ( function () {
 	}
 
 
+	/**
+	 * Function that activates when the player touches an enemy
+	 * @param s1 - actor sprite
+	 * @param p1 - actor plane
+	 * @param s2 - enemy sprite
+	 * @param p2 - enemy plane
+	 * @param type - type of collision (in this case we want overlap)
+	 */
 	let enemyTouch = function(s1, p1, s2, p2, type){
 		let oplane = PS.gridPlane();
 
@@ -678,30 +708,39 @@ const G = ( function () {
 		//Do an additional check to see if the color matches so phantom sprites don't trigger unwanted collision
 		if(type === PS.SPRITE_OVERLAP && (PS.color(_actor_x,_actor_y) === _DRAW_SNAKE || PS.color(_actor_x,_actor_y) === _DRAW_HUMAN) ){
 			PS.gridPlane(oplane);
+
+			//Indicate that the player is dead and the enemies are not detecting them
 			isDead = true;
 			isDetected = false;
-			//pause = true;
+
+			//Change status line and set dialogue timer to convey message for a certain amount of time
 			statusLine = "Rats! You were devoured!";
 			collectDialogueTimer = 30;
-			//PS.statusText("Rats! You were devoured!");
+
+			//Play a random rat death sound upon death
 			let deathPicker = PS.random(3);
 			PS.audioPlay("RatDeath" + deathPicker, {path: "audio/", volume: 0.3});
 
 
+			//Reset enemy behavior
 			for(let i = 0; i < enemies.length; i++){
+				//Alter position
 				PS.spriteMove(enemies[i]._enemy_sprite, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
 				enemies[i]._enemy_position = 0;
-				//enemies[i]._enemy_rotate_counter = 0;
+
+				//Reset rotation counter
 				globalRotationCounter = 0;
-				//enemies[i]._enemy_path = [];
-				enemies[i]._enemy_path = PS.pathFind( _pathmap, enemies[i]._enemy_originX, enemies[i]._enemy_originY, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
+
+				//enemies[i]._enemy_path = PS.pathFind( _pathmap, enemies[i]._enemy_originX, enemies[i]._enemy_originY, enemies[i]._enemy_originX, enemies[i]._enemy_originY);
+
+				//Reset enemy path
 				enemies[i]._enemy_touched = true;
 			}
 
+
+			//Reset actor position to beginning of room
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
-
-
 			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
 
 		}
@@ -731,25 +770,27 @@ const G = ( function () {
 			actor_step(_actor_moveX, _actor_moveY);
 		}
 
+		//Respawn while loop
 		while(reviveCounter < 60 && isDead){
 			reviveCounter++;
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 		}
 
+		//Change isDead to false
 		if(reviveCounter >= 60){
 			isDead = false;
-			//PS.statusText("It's tail time!");
 		}
 
 	}
 
 	/**
-	 * Enemy behavior
+	 * Enemy behavior timer
 	 * @private
 	 */
 	const _enemy_clock = function(){
 
+		//Have enemies pause upon sight to give the player a brief period to run
 		if(isDetected){
 			globalInitPauseCounter++;
 		} else {
@@ -1041,65 +1082,13 @@ const G = ( function () {
 	//MAP FUNCTIONS//
 	// ==============
 
-	const _shade = function ( color ) {
-		const range = 32;
-
-		const vary = function ()  {
-			return ( PS.random( range * 2 ) - range );
-		};
-
-		const r = color.r + vary();
-		const g = color.g + vary();
-		const b = color.b + vary();
-
-		return PS.makeRGB( r, g, b );
-	};
-
-
-	const _draw_map = function ( map ) {
-		PS.gridPlane( _PLANE_MAP );
-
-		let i = 0;
-		for ( let y = 0; y < map.height; y += 1 ) {
-			for ( let x = 0; x < map.width; x += 1 ) {
-				PS.gridPlane( _PLANE_MAP );
-				let color;
-				let data = map.data[ i ];
-				switch ( data ) {
-					case _MAP_GROUND:
-					case _MAP_TALK_NPC: {
-						color = _DRAW_GROUND;
-						break;
-					}
-					case _MAP_NPC:
-						color = _DRAW_ELDER;
-						break;
-					case _MAP_WALL:
-						color = _shade( _rgb_wall );
-						break;
-					case _MAP_DOOR:
-						color = _DRAW_DOOR;
-						break;
-					case _MAP_SHARD:
-						PS.gridPlane(_PLANE_SHARD);
-						PS.alpha(x,y,255);
-						color = _DRAW_SHARD;
-						PS.color(x,y,color);
-						PS.gridPlane(_PLANE_MAP);
-						color = _DRAW_GROUND;
-						break;
-					default:
-						color = PS.COLOR_WHITE;
-						break;
-				}
-				PS.color( x, y, color );
-				i += 1;
-			}
-		}
-	};
-
+	/**
+	 * Loads the map data of an image scanned in'
+	 * @param image - the image whose data is being scanned in
+	 */
 	const onMapLoad = function ( image ) {
-		//check for errors
+
+		//check for a bad image
 		if ( image === PS.ERROR ) {
 			PS.debug( "onMapLoad(): image load error\n" );
 			return;
@@ -1114,12 +1103,10 @@ const G = ( function () {
 		enemies = [];
 		NPCs = [];
 
-
-
-		_mapdata = image; // save map data for later
+		// save map data for later
+		_mapdata = image;
 
 		// Prepare grid for map drawing
-
 		_imagemap.width = _grid_x = image.width;
 		_imagemap.height = _grid_y = image.height;
 
@@ -1127,24 +1114,29 @@ const G = ( function () {
 		PS.gridSize( _grid_x, _grid_y );
 		PS.border( PS.ALL, PS.ALL, 0 );
 
-		//PS.imageBlit(image, 0, 0, {left: 0, top: 0, width: 16, height: 16 });
-
 		// Translate map pixels to data format expected by _imagemap
 
 		let i = 0; // init pointer into _imagemap.data array
 
+
+		//Assign all map data
 		for ( let y = 0; y < _grid_y; y += 1 ) {
 			for ( let x = 0; x < _grid_x; x += 1 ) {
-				let data = _MAP_GROUND; // assume ground
+				let data = _MAP_GROUND; // assume ground data by default
 				let pixel = image.data[ i ];
+
+				//Depending on the color of the map data, assign a different type of data to the bead
 				switch ( pixel ) {
 					case GROUND_COLOR:
 						break; // no need to do anything
+
+					//Indicate wall locations
 					case WALL_COLOR:
 						data = _MAP_WALL; // found a wall!
 						break;
-					case ACTOR_COLOR:
 
+					//Establish spawn point of the actor
+					case ACTOR_COLOR:
 						if(!onInitLoad){
 							_actor_x = x; // establish initial location of actor
 							_actor_y = y;
@@ -1153,6 +1145,8 @@ const G = ( function () {
 						}
 
 						break;
+
+					//Spawn enemies, push coordinates, and note enemy type
 					case SNAKE_COLOR:
 						new Snake(x,y);
 						enemyCoords.push([x,y]);
@@ -1164,13 +1158,19 @@ const G = ( function () {
 						enemyCoords.push([x,y]);
 						enemyTypes.push(1);
 						break;
+
+					//Assign doors, which load other map chunks
 					case DOOR_COLOR:
 						data = _MAP_DOOR;
 						break;
+
+					//Assign shard position
 					case SHARD_COLOR:
 						//We want to check if the shard has been successfully collected before we spawn it in
 						let shardCollected = false;
 						let shardCarried = false;
+
+						//Check to see if the shard has been carried or collected using the shard array
 
 						for(let i = 0; i < shardsCarriedArray.length; i++){
 							let currentShard = shardsCarriedArray[i];
@@ -1186,12 +1186,13 @@ const G = ( function () {
 							}
 						}
 
+						//If the shard is neither carried nor collected, set the data to indicate that a shard should spawn there
 						if((!shardCollected && !shardCarried)){
 							data = _MAP_SHARD;
 						}
-
-
 						break;
+
+					//NPC assignments
 					case ELDER_TALK_COLOR:
 						data = _MAP_TALK_NPC;
 						break;
@@ -1202,19 +1203,22 @@ const G = ( function () {
 						new NPC(x,y);
 						data = _MAP_RAT_NPC;
 						break;
+
+					//Unexpected cases
 					default:
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
 						break;
 				}
+
 				_imagemap.data[ i ] = data; // install translated data
-				PS.data(x,y,data);
+				PS.data(x,y,data); //Assign data to bead
 				i += 1; // update array pointer
 			}
 		}
 
 		// Now we can complete the initialization
 
-		//_draw_map( _imagemap );
+		//Load a color map. If the endRoom boolean isn't set, resume operations as per usual
 		if(!endRoom){
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
 		} else {
@@ -1238,16 +1242,23 @@ const G = ( function () {
 	 */
 	let onColorLoad = function(image) {
 
+		//Check for bad image
 		if ( image === PS.ERROR ) {
 			PS.debug( "onMapLoad(): image load error\n" );
 			return;
 		}
 
+		// init pointer into _imagemap.data array
 		let i = 0;
 
+		//Assign all map data
 		for ( let y = 0; y < _grid_y; y += 1 ) {
 			for ( let x = 0; x < _grid_x; x += 1 ) {
 				let pixel = image.data[i];
+
+				//Check to see if the data is of a shard
+				//If it is, draw a shard regardless of color input
+				//Otherwise, just read in color data as per usual
 				if(PS.data(x,y) !== _MAP_SHARD){
 					PS.color(x,y,pixel);
 				} else {
@@ -1258,11 +1269,13 @@ const G = ( function () {
 		}
 	}
 
-	/////////////////////////
+	//=======================
 	//Perlenspiel functions//
-	/////////////////////////
+	//=======================
 	return {
 		init : function () {
+
+			//database code
 
 			// Change this string to your team name
 			// Use only ALPHABETIC characters
@@ -1294,10 +1307,15 @@ const G = ( function () {
 
 			// Load the image map in format 1
 
-			//PS.keyRepeat(PS.DEFAULT, 6, PS.DEFAULT);
 
+
+
+
+
+			//Load the rat cave
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
+			//Start game timers
 			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
 			_enemy_timer_id = PS.timerStart(6, _enemy_clock);
@@ -1398,6 +1416,6 @@ const G = ( function () {
 PS.init = G.init;
 PS.touch = G.touch;
 PS.keyDown = G.keyDown;
-PS.keyUp = G.keyUp;
+//PS.keyUp = G.keyUp;
 
 //code blocks
