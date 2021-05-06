@@ -64,7 +64,7 @@ const G = ( function () {
 	const _DRAW_FOV = PS.COLOR_YELLOW;//0xB49100;
 	const _DRAW_DOOR = 0x00618e;//0x002F59;
 	const _DRAW_SHARD = 0xb100b1;
-	const _DRAW_ELDER = 0x41053F;
+	const _DRAW_ELDER = 0x566078;
 	const _DRAW_NPC = 0x727491;
 
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
