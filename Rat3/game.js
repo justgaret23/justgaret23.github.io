@@ -865,7 +865,7 @@ const G = ( function () {
 				statusLine = "I'll take that off your hands!";
 				shardNotif = true;
 			} else if(!shardNotif && !gameClear){
-				statusLine = "Bring them to me! They look like me!";
+				statusLine = "Bring me the eggplants!";
 			} else if(gameClear){
 				statusLine = "The eternal eggplant is reassembled! Huzzah!";
 			}
