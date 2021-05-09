@@ -1124,7 +1124,6 @@ const G = ( function () {
 		_imagemap.height = _grid_y = image.height;
 
 		//initialize grid and borders
-		PS.gridSize( _grid_x, _grid_y );
 		PS.border( PS.ALL, PS.ALL, 0 );
 
 		//PS.imageBlit(image, 0, 0, {left: 0, top: 0, width: 16, height: 16 });

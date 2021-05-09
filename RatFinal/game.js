@@ -56,6 +56,9 @@ const G = ( function () {
 	//grey/brown
 	const _DRAW_WALL = [0x600000, 0x006000, 0x000060];
 	const _DRAW_GROUND = 0x787D88;
+	const _DRAW_ROCK = 0x3f3a3d;
+
+
 
 
 	const _DRAW_ACTOR = 0xfa9efa;
@@ -66,12 +69,16 @@ const G = ( function () {
 	const _DRAW_SHARD = 0xb100b1;
 	const _DRAW_ELDER = 0x566078;
 	const _DRAW_NPC = 0x727491;
+	const _DRAW_DIRT = 0x45291c;
+	const _DRAW_GRASS = 0x4a652d;
 
+	let _rgb_rock = PS.unmakeRGB(_DRAW_ROCK, {});
+	let _rgb_grass = PS.unmakeRGB(_DRAW_GRASS, {});
 	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
 	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL[0], {} );
 
-	let _grid_x;
-	let _grid_y;
+	let _grid_x = 16;
+	let _grid_y = 16;
 
 	let _actor_x = -1;
 	let _actor_y;
@@ -81,6 +88,7 @@ const G = ( function () {
 	let _actor_position;
 	let _actor_sprite;
 	let _actor_moving = false;
+	let lastColor = 0x45291c;
 	let moveUp = false;
 	let moveDown = false;
 	let moveLeft = false;
@@ -197,6 +205,12 @@ const G = ( function () {
 	const _actor_place = function ( x, y ) {
 		//If the player is not dead, allow movement
 		//If the player is dead, force them back at the entry point of the current screen
+
+		//revert to last color
+		let oplane = PS.gridPlane();
+		PS.gridPlane(_PLANE_MAP);
+		PS.color(_actor_x, _actor_y, lastColor);
+
 		if(!isDead){
 			PS.spriteMove( _actor_sprite, x, y );
 			_actor_x = x;
@@ -206,6 +220,9 @@ const G = ( function () {
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 		}
+		lastColor = PS.color(_actor_x, _actor_y)
+		PS.color(_actor_x, _actor_y, _DRAW_ACTOR);
+		PS.gridPlane(oplane);
 	};
 
 	/////////////
@@ -739,6 +756,9 @@ const G = ( function () {
 
 
 			//Reset actor position to beginning of room
+			if(globalInitPauseCounter > 3){
+				PS.color(_actor_x, _actor_y, lastColor);
+			}
 			_actor_x = _actor_originX;
 			_actor_y = _actor_originY;
 			PS.spriteMove(_actor_sprite, _actor_originX, _actor_originY);
@@ -791,9 +811,11 @@ const G = ( function () {
 	const _enemy_clock = function(){
 
 		//Have enemies pause upon sight to give the player a brief period to run
-		if(isDetected){
+		if(isDetected && enemies.length > 0){
+			PS.gridShadow(true, PS.COLOR_RED);
 			globalInitPauseCounter++;
-		} else {
+		} else if(!isDetected || enemies.length === 0) {
+			PS.gridShadow(false, PS.COLOR_WHITE)
 			globalInitPauseCounter = 0;
 			alertSoundPlayed = false;
 		}
@@ -813,7 +835,7 @@ const G = ( function () {
 
 					isDetected = true;
 				}
-				enemyTouch(_actor_sprite, _PLANE_ACTOR, enemy._enemy_sprite, _PLANE_ENEMY, PS.SPRITE_OVERLAP);
+				enemyTouch(enemy._enemy_sprite, _PLANE_ENEMY, _actor_sprite, _PLANE_ACTOR,  PS.SPRITE_OVERLAP);
 			}
 		}
 
@@ -821,14 +843,17 @@ const G = ( function () {
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
 			if(!isDetected){
-
+				PS.debug("hello");
 				isDetected = true;
 			}
 			for(let i=0; i < enemies.length; i++){
 				let enemy = enemies[i];
 				let path = PS.pathFind( _pathmap, enemy._enemy_x, enemy._enemy_y, _actor_x, _actor_y );
 				if ( path.length > 0 ) {
-					PS.audioPlay("piano_a0");
+					if(!alertSoundPlayed){
+						PS.audioPlay("piano_a0");
+						alertSoundPlayed = true;
+					}
 					enemy._enemy_position = 0;
 					enemy._enemy_path = path;
 				}
@@ -901,11 +926,13 @@ const G = ( function () {
 
 			if(shardsCarriedArray.length > 1){
 				statusLine = "Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!";
+				PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
 				shardNotif = true;
 			} else if(shardsCarriedArray.length === 1){
-				statusLine = "I'll take that off your hands!";
+				statusLine = "I'll take that eggplant off your hands!";
+				PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
 				shardNotif = true;
-			} else if(!shardNotif && !gameClear){
+			} else if(!shardNotif){
 				statusLine = "Bring me the eggplants!";
 			} else if(gameClear){
 				statusLine = "The eternal eggplant is reassembled! Huzzah!";
@@ -927,7 +954,7 @@ const G = ( function () {
 			statusLine = "Eggplant GET!";
 			collectDialogueTimer = 30;
 			PS.gridPlane(0);
-			PS.color(_actor_x, _actor_y, 0x45291c);
+			lastColor = _DRAW_DIRT;
 			let oplane = PS.gridPlane();
 			PS.gridPlane(_PLANE_SHARD);
 			PS.alpha(_actor_x,_actor_y, 0);
@@ -1005,6 +1032,8 @@ const G = ( function () {
 				_actor_originX = _actor_x
 				_actor_originY = _actor_y;
 				PS.spriteMove(_actor_sprite, _actor_x, _actor_y);
+				lastColor = PS.color(_actor_x, _actor_y);
+				PS.color(_actor_x, _actor_y, _DRAW_GRASS);
 
 				if(!endRoom){
 					PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
@@ -1107,11 +1136,11 @@ const G = ( function () {
 		_mapdata = image;
 
 		// Prepare grid for map drawing
-		_imagemap.width = _grid_x = image.width;
-		_imagemap.height = _grid_y = image.height;
+		_imagemap.width = _grid_x;
+		_imagemap.height = _grid_y;
 
 		//initialize grid and borders
-		PS.gridSize( _grid_x, _grid_y );
+
 		PS.border( PS.ALL, PS.ALL, 0 );
 
 		// Translate map pixels to data format expected by _imagemap
@@ -1209,6 +1238,7 @@ const G = ( function () {
 						PS.debug( "onMapLoad(): unrecognized pixel value\n" );
 						break;
 				}
+				PS.fade(x,y,10);
 
 				_imagemap.data[ i ] = data; // install translated data
 				PS.data(x,y,data); //Assign data to bead
@@ -1227,6 +1257,14 @@ const G = ( function () {
 
 
 		// Set up actor sprite and place it
+
+		if((levelIndexX === 2 && levelIndexY === 2) && _actor_x !== 5){
+			lastColor = 0x766e4c;
+		} else if(levelIndexX === 2 && levelIndexY === 0){
+			lastColor = _DRAW_DIRT;
+		} else if((levelIndexX !== 2 || levelIndexY !== 2)) {
+			lastColor = _DRAW_GRASS;
+		}
 
 		_actor_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
 		PS.spriteSolidColor( _actor_sprite, _DRAW_ACTOR ); // assign color
@@ -1250,6 +1288,20 @@ const G = ( function () {
 
 		// init pointer into _imagemap.data array
 		let i = 0;
+		let oplane = PS.gridPlane();
+
+		PS.gridPlane(_PLANE_ENEMY_SIGHT);
+		for ( let y = 0; y < _grid_y; y += 1 ) {
+			for ( let x = 0; x < _grid_x; x += 1 ) {
+				if(PS.color(x,y) === PS.COLOR_YELLOW){
+					PS.color(x,y,PS.COLOR_WHITE);
+					PS.alpha(x,y,0);
+				}
+			}
+		}
+		PS.gridPlane(oplane);
+
+
 
 		//Assign all map data
 		for ( let y = 0; y < _grid_y; y += 1 ) {
@@ -1259,15 +1311,91 @@ const G = ( function () {
 				//Check to see if the data is of a shard
 				//If it is, draw a shard regardless of color input
 				//Otherwise, just read in color data as per usual
-				if(PS.data(x,y) !== _MAP_SHARD){
-					PS.color(x,y,pixel);
-				} else {
+				if(PS.data(x,y) === _MAP_SHARD){
 					PS.color(x,y,_DRAW_SHARD);
+
+				} else if(pixel === _DRAW_GRASS){
+					PS.color(x,y,_grass_shade(_rgb_grass));
+				} else if(pixel === _DRAW_ROCK) {
+					PS.color(x,y,_shade(_rgb_rock));
+
+				} else {
+					PS.color(x,y,pixel);
 				}
+
+
+				//Check for collected eggplant pieces to display
+				if(levelIndexX === 2 && levelIndexY === 2){
+					switch(shardsCollectedArray.length){
+						case 1:
+							PS.color(4,2, _DRAW_SHARD);
+							break;
+						case 2:
+							PS.color(4,2, _DRAW_SHARD);
+							PS.color(3,3, _DRAW_SHARD);
+							break;
+						case 3:
+							PS.color(4,2, _DRAW_SHARD);
+							PS.color(3,3, _DRAW_SHARD);
+							PS.color(2,4, _DRAW_SHARD);
+							break;
+						case 4:
+							PS.color(4,2, _DRAW_SHARD);
+							PS.color(3,3, _DRAW_SHARD);
+							PS.color(2,4, _DRAW_SHARD);
+							PS.color(3,5, _DRAW_SHARD);
+							break;
+						case 5:
+							PS.color(4,2, _DRAW_SHARD);
+							PS.color(3,3, _DRAW_SHARD);
+							PS.color(2,4, _DRAW_SHARD);
+							PS.color(3,5, _DRAW_SHARD);
+							PS.color(3,4, _DRAW_SHARD);
+							break;
+						case 6:
+							PS.color(4,2, _DRAW_SHARD);
+							PS.color(3,3, _DRAW_SHARD);
+							PS.color(2,4, _DRAW_SHARD);
+							PS.color(3,5, _DRAW_SHARD);
+							PS.color(3,4, _DRAW_SHARD);
+							PS.color(4, 5, _DRAW_SHARD);
+							break;
+					}
+				}
+
 				i += 1;
 			}
 		}
 	}
+
+	const _shade = function ( color ) {
+		const range = 10;
+
+		const vary = function ()  {
+			return ( PS.random( range * 2 ) - range );
+		};
+
+		const r = color.r + vary();
+		const g = r;
+		const b =r;
+
+
+		return PS.makeRGB( r, g, b );
+	};
+
+	const _grass_shade = function ( color ) {
+		const range = 5;
+
+		const vary = function ()  {
+			return ( PS.random( range * 2 ) - range );
+		};
+
+		const r = color.r + vary();
+		const g = color.g + vary();
+		const b = color.b + vary();
+
+		return PS.makeRGB( r, g, b );
+	};
 
 	//=======================
 	//Perlenspiel functions//
@@ -1282,6 +1410,8 @@ const G = ( function () {
 			// No numbers, spaces or punctuation!
 
 			const TEAM = "pix";
+
+			PS.gridSize( _grid_x, _grid_y );
 
 			// Begin with essential setup
 			// Establish initial grid size
@@ -1315,6 +1445,7 @@ const G = ( function () {
 			//Load the rat cave
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
+			PS.gridSize( _grid_x, _grid_y );
 			//Start game timers
 			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
@@ -1326,14 +1457,21 @@ const G = ( function () {
 			//PS.debug("Shards carried: " + shardsCarriedArray);
 			//PS.debug("Shards collected: " + shardsCollectedArray);
 
+
 			for(let i = 0; i < 6; i++){
 				PS.gridPlane(i);
 				PS.debug("Plane " + i + " Color: " + PS.color(x,y));
 				PS.debug("Plane " + i + " Alpha: " + PS.alpha(x,y));
 			}
+			PS.debug("Enemies: " + enemies.length);
+			PS.debug("Detected? " + isDetected)
+
+
 		},
 		keyDown : function (key){
-			shardNotif = false;
+			if(collectDialogueTimer <= 0){
+				shardNotif = false;
+			}
 			_actor_moving = true;
 
 
