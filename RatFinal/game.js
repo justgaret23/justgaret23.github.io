@@ -16,6 +16,7 @@ const G = ( function () {
 	let levelIndexX = 2;
 	let levelIndexY = 2;
 
+	//Bead map color assignments
 	const WALL_COLOR = PS.COLOR_BLACK;
 	const GROUND_COLOR = PS.COLOR_WHITE;
 	const ACTOR_COLOR = PS.COLOR_GREEN;
@@ -27,8 +28,24 @@ const G = ( function () {
 	const ELDER_TALK_COLOR = 0xb100b1;
 	const NPC_COLOR = 0x5b5b5b;
 
-	// These define the data used by the pathfinder
+	// These are the actual drawing colors for all elements
+	const _DRAW_GROUND = 0x787D88;
+	const _DRAW_ROCK = 0x3f3a3d;
+	const _DRAW_ACTOR = 0xfa9efa;
+	const _DRAW_SNAKE = 0x8db980;//0x093A1B;
+	const _DRAW_HUMAN = 0x82623B;
+	const _DRAW_FOV = PS.COLOR_YELLOW;//0xB49100;
+	const _DRAW_DOOR = 0x00618e;//0x002F59;
+	const _DRAW_SHARD = 0xb100b1;
+	const _DRAW_ELDER = 0x566078;
+	const _DRAW_NPC = 0x727491;
+	const _DRAW_LIGHT_DIRT = 0x625b3a;
+	const _DRAW_GRASS = 0x4a652d;
 
+	let _rgb_rock = PS.unmakeRGB(_DRAW_ROCK, {});
+	let _rgb_grass = PS.unmakeRGB(_DRAW_GRASS, {});
+
+	// These define the data used by the pathfinder
 	const _MAP_WALL = 0;
 	const _MAP_GROUND = 1;
 	const _MAP_DOOR = 2;
@@ -38,88 +55,61 @@ const G = ( function () {
 	const _MAP_RAT_NPC = 6;
 
 	// These are the plane assignments
-
 	const _PLANE_MAP = 0;
 	const _PLANE_SHARD = 1;
 	const _PLANE_ENEMY_SIGHT = 2;
 	const _PLANE_ENEMY = 3;
 	const _PLANE_ACTOR = 4;
-	const _PLANE_BLOOD = 5;
 	const _PLANE_ELDER = 6;
 
-	// These are the actual drawing colors for all elements
-
-	//Color schemes:
-	// red/grey
-	// green/light grey
-	// blue/darker grey
-	//grey/brown
-	const _DRAW_WALL = [0x600000, 0x006000, 0x000060];
-	const _DRAW_GROUND = 0x787D88;
-	const _DRAW_ROCK = 0x3f3a3d;
-
-
-
-
-	const _DRAW_ACTOR = 0xfa9efa;
-	const _DRAW_SNAKE = 0x8db980;//0x093A1B;
-	const _DRAW_HUMAN = 0x82623B;
-	const _DRAW_FOV = PS.COLOR_YELLOW;//0xB49100;
-	const _DRAW_DOOR = 0x00618e;//0x002F59;
-	const _DRAW_SHARD = 0xb100b1;
-	const _DRAW_ELDER = 0x566078;
-	const _DRAW_NPC = 0x727491;
-	const _DRAW_DIRT = 0x45291c;
-	const _DRAW_LIGHT_DIRT = 0x625b3a;
-	const _DRAW_GRASS = 0x4a652d;
-
-	let _rgb_rock = PS.unmakeRGB(_DRAW_ROCK, {});
-	let _rgb_grass = PS.unmakeRGB(_DRAW_GRASS, {});
-	let _rgb_ground = PS.unmakeRGB( _DRAW_GROUND, {} );
-	let _rgb_wall = PS.unmakeRGB( _DRAW_WALL[0], {} );
-
+	//grid size of game
 	let _grid_x = 16;
 	let _grid_y = 16;
 
+	//current actor position
 	let _actor_x = -1;
 	let _actor_y;
+
+	//actor respawn position
 	let _actor_originX;
 	let _actor_originY;
-	let _actor_path = null;
-	let _actor_position;
-	let _actor_sprite;
-	let _actor_moving = false;
-	let lastColor = 0x45291c;
-	let moveUp = false;
-	let moveDown = false;
-	let moveLeft = false;
-	let moveRight = false;
+
+	//variables that allow keyboard movement input
 	let _actor_moveX = 0;
 	let _actor_moveY = 0;
-	let isDead = false;
-	let isTalking = false;
-	let dialogueMarker = 0;
+
+	let _actor_path = null; //path of actor
+	let _actor_position; //current position of actor on path
+	let _actor_sprite; //actor sprite storer
+	let _actor_moving = false;
+	let lastColor = 0x45291c; //The color of the bead the actor stepped on
+	let isDead = false; //boolean that checks if the player is alive
+	let isTalking = false; //Boolean that checks whether a rat is talking
+	let dialogueMarker = 0; //current location in a dialogue array
 
 	let endRoom = false;
+	let isLoading = false;
 
 
-	let initDialogueTimer = 0;
-	let collectDialogueTimer = 0;
-	let globalRotationCounter = 25;
-	let globalInitPauseCounter = 0;
+	////
+	//Timers
+	////
+
+	let initDialogueTimer = 0; //Timer that prevents player from skipping dialogue quickly
+	let collectDialogueTimer = 0; //Time collect message is shown on screen
+	let globalRotationCounter = 25; //The amount of time between enemy rotations
+	let globalInitPauseCounter = 0; //Timer that makes enemies halt before pursuing you
+	let inRoomTimer = 0; //timer that tracks how long you've been in a room
 
 
 	let pickedUpRot = false;
 	let isDetected = false;
-	let talkedToElder = false;
-	let alertSoundPlayed = false;
+	let talkedToElder = false; //boolean that checks if you've talked to the elder, handles tutorial text
+	let alertSoundPlayed = false; //boolean to prevent alert sound from playing repeatedly
 
-	//Amount of shards the player has on them
-	let playerShardsInPossession = 0;
-	let shardsInBase = 0;
-	let totalShards = 4;
-	//We use the coordinates of the level to keep track of where the shards are
-	let shardArray = [];
+	let neededShards = 6;
+
+	//Arrays that check how many shards the player has on them and how many are stashed
 	let shardsCarriedArray = [];
 	let shardsCollectedArray = [];
 
@@ -131,6 +121,7 @@ const G = ( function () {
 	let NPCs = [];
 	let enemies = [];
 	let enemyCoords = [];
+	let ratsTalked = [];
 
 	//Enemy IDs:
 	//Snake: 0
@@ -246,6 +237,7 @@ const G = ( function () {
 			this.dialogueTimer = 0;
 			this.canTalk = true;
 			this.ratTalking = false;
+			this.ratTalked = false;
 
 			this.sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
 			PS.spriteSolidColor( this.sprite, _DRAW_NPC ); // assign color
@@ -266,6 +258,16 @@ const G = ( function () {
 					if(!this.textPushed){
 						let talkPicker = PS.random(5);
 						PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
+
+						for(let i = 0; i < ratsTalked.length; i++){
+							if(ratsTalked[i][0] === levelIndexX && ratsTalked[i][1] === levelIndexY){
+								this.ratTalked = true;
+							}
+						}
+
+						if(this.ratTalked){
+							this.dialogue.push("Like I said...");
+						}
 						this.pushText();
 					}
 					this.ratTalking = true;
@@ -286,17 +288,6 @@ const G = ( function () {
 					switch(shardsCollectedArray.length){
 						case 0:
 							this.dialogue.push("We need the six vegetables to survive.");
-							/*
-							this.dialogue.push("There may yet be hope for our clan.");
-							this.dialogue.push("Our scouts have discovered crucial artifacts!");
-							this.dialogue.push("These may be scraps of the Eternal Eggplant.");
-							this.dialogue.push("A fabled herb that can lead us to prosperity.");
-							this.dialogue.push("Pink Rat, I will trust you with gathering them.");
-							this.dialogue.push("Deliver your findings to the purple rat.");
-							this.dialogue.push("Find these six scraps and bring us fortune.");
-							this.dialogue.push("But beware the monsters outside our walls...");
-
-							 */
 							talkedToElder = true;
 							break;
 						case 1:
@@ -321,21 +312,25 @@ const G = ( function () {
 							this.dialogue.push("Scout the northern lands for a new home.");
 							this.dialogue.push("Our future must lie in our own hands.");
 							break;
-
-
 					}
-
+					break;
+				case "3|3":
+					this.dialogue.push("There's an eggplant in the previous room.");
+					pickedUpRot = true;
 					break;
 				case "3|4":
 					this.dialogue.push("Is there no other way forward?");
 					break;
 				case "4|0":
-					this.dialogue.push("");
+					this.dialogue.push("Look at this foolish structure.");
+					this.dialogue.push("What simpleton could have created this?");
+					this.dialogue.push("Such a crude construction.");
+
 					break;
 				case "4|1":
 					this.dialogue.push("Good to see you, Pink!");
 					this.dialogue.push("These ruins look kinda interesting.");
-					this.dialogue.push("Maybe they used to house something important?")
+					this.dialogue.push("Maybe they used to house something big?")
 					this.dialogue.push("It looks damaged. I wonder what happened...");
 					this.dialogue.push("...I doubt we have time to speculate...");
 					this.dialogue.push("...I'd hate to interrupt you. Keep on hunting!");
@@ -356,6 +351,7 @@ const G = ( function () {
 			}
 			//Boolean to prevent pushing text every active frame
 			this.textPushed = true;
+			ratsTalked.push([levelIndexX, levelIndexY]);
 		}
 	}
 
@@ -370,13 +366,10 @@ const G = ( function () {
 			this._enemy_originX = x;
 			this._enemy_originY = y;
 			this._enemy_path = null;
-			this._path_ground = [];
 			this._enemy_position = 0;
 			this._enemy_touched = false;
 			this._enemy_sight = [];
-			this._enemy_sight = [];
 			this._enemy_prev_sight = [];
-			this._enemy_rotate_counter = 25;
 			this._enemy_view_direction = 0;
 
 			this._enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
@@ -419,7 +412,7 @@ const G = ( function () {
 					} else {
 						this._enemy_touched = false;
 					}
-					PS.gridPlane(2);
+					PS.gridPlane(_PLANE_ENEMY_SIGHT);
 					for(let i=0; i < this._enemy_sight.length; i++){
 						PS.alpha(this._enemy_sight[i][0], this._enemy_sight[i][1], 0);
 						PS.color(this._enemy_sight[i][0], this._enemy_sight[i][1], _DRAW_GROUND);
@@ -530,7 +523,6 @@ const G = ( function () {
 			this._enemy_sight = [];
 			this._enemy_sight_range = 3;
 			this._enemy_prev_sight = [];
-			this._enemy_rotate_counter = 25;
 			this._enemy_view_direction = 0;
 
 			this._enemy_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
@@ -571,7 +563,8 @@ const G = ( function () {
 					} else {
 						this._enemy_touched = false;
 					}
-					PS.gridPlane(2);
+
+					PS.gridPlane(_PLANE_ENEMY_SIGHT);
 					for(let i=0; i < this._enemy_sight.length; i++){
 						if(onGrid(this._enemy_sight[i][0], this._enemy_sight[i][1]) &&
 							PS.data(this._enemy_sight[i][0], this._enemy_sight[i][1]) === _MAP_GROUND){
@@ -681,7 +674,6 @@ const G = ( function () {
 
 				}
 			}
-
 
 
 			//Compare the arrays to see if the view has changed. If it has, delete the last view
@@ -843,8 +835,8 @@ const G = ( function () {
 		//Check to see if the enemy sees the player
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
-			if(!isDetected){
-				PS.debug("hello");
+			if(!isDetected && inRoomTimer > 5){
+				PS.debug("why");
 				isDetected = true;
 			}
 			for(let i=0; i < enemies.length; i++){
@@ -891,6 +883,11 @@ const G = ( function () {
 	 * @private
 	 */
 	const _clock = function () {
+		inRoomTimer++;
+
+		if(!isDetected){
+			PS.gridShadow(false, PS.COLOR_WHITE);
+		}
 		if(statusLine === "" && collectDialogueTimer === 0){
 			if(!talkedToElder){
 				PS.statusText("Use the arrow keys/WSAD to move.")
@@ -925,6 +922,15 @@ const G = ( function () {
 				giverTalk = true;
 			}
 
+			if(shardsCollectedArray.length >= neededShards){
+				statusLine = "The eggplant's complete! Talk to the elder!"
+
+				for(let i = 0; i < ratsTalked.length; i++){
+					if(ratsTalked[i][0] === 2 && ratsTalked[i][1] === 2){
+						ratsTalked.splice(i, 1);
+					}
+				}
+			}
 			if(shardsCarriedArray.length > 1){
 				statusLine = "Those " + shardsCarriedArray.length + " eggplant pieces are safe with me!";
 				PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
@@ -933,10 +939,8 @@ const G = ( function () {
 				statusLine = "I'll take that eggplant off your hands!";
 				PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + "-Color.gif", onColorLoad, 1 );
 				shardNotif = true;
-			} else if(!shardNotif){
+			} else if(!shardNotif && shardsCollectedArray.length < neededShards){
 				statusLine = "Bring me the eggplants!";
-			} else if(gameClear){
-				statusLine = "The eternal eggplant is reassembled! Huzzah!";
 			}
 			collectDialogueTimer = 30;
 
@@ -956,6 +960,8 @@ const G = ( function () {
 			collectDialogueTimer = 30;
 			PS.gridPlane(0);
 			lastColor = _DRAW_LIGHT_DIRT;
+
+
 			let oplane = PS.gridPlane();
 			PS.gridPlane(_PLANE_SHARD);
 			PS.alpha(_actor_x,_actor_y, 0);
@@ -966,6 +972,7 @@ const G = ( function () {
 		}
 
 		if(PS.data(_actor_x, _actor_y) === _MAP_DOOR){
+			inRoomTimer = 0;
 			isDetected = false;
 
 			onInitLoad = true;
@@ -995,8 +1002,9 @@ const G = ( function () {
 			//Up screen transition
 			} else if(_actor_y === 0){
 				if(levelIndexY === 0){
-					if(shardsCollectedArray.length === 6){
+					if(shardsCollectedArray.length === neededShards){
 						endRoom = true;
+						_actor_y = gridSizeY-2;
 					} else {
 						statusLine = "You can't abandon your clan now!";
 						ooB = true;
@@ -1029,12 +1037,7 @@ const G = ( function () {
 			}
 
 			if(!ooB){
-				//Reset respawn location
-				_actor_originX = _actor_x
-				_actor_originY = _actor_y;
-				PS.spriteMove(_actor_sprite, _actor_x, _actor_y);
-				lastColor = PS.color(_actor_x, _actor_y);
-				PS.color(_actor_x, _actor_y, _DRAW_GRASS);
+
 
 				if(!endRoom){
 					PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
@@ -1042,10 +1045,14 @@ const G = ( function () {
 					PS.imageLoad("images/ratmapEnd.gif", onMapLoad, 1 );
 				}
 
+				//Reset respawn location
+				_actor_originX = _actor_x
+				_actor_originY = _actor_y;
+				//PS.spriteMove(_actor_sprite, _actor_x, _actor_y);
+				lastColor = PS.color(_actor_x, _actor_y);
+				PS.color(_actor_x, _actor_y, _DRAW_GRASS);
 			}
 		}
-
-
 
 		//Path functions
 		if ( _actor_path ) {
@@ -1067,7 +1074,6 @@ const G = ( function () {
 		//Standard NPC behavior
 		for(let i = 0; i < NPCs.length; i++){
 			let NPC = NPCs[i];
-			let lastDialogueMarker = dialogueMarker;
 			NPC.update();
 
 			//if an NPC is talking, do special stuff
@@ -1117,6 +1123,7 @@ const G = ( function () {
 	 * @param image - the image whose data is being scanned in
 	 */
 	const onMapLoad = function ( image ) {
+		isLoading = true;
 
 		//check for a bad image
 		if ( image === PS.ERROR ) {
@@ -1184,6 +1191,7 @@ const G = ( function () {
 
 						break;
 					case HUMAN_COLOR:
+						//spawn a human
 						new Human(x,y);
 						enemyCoords.push([x,y]);
 						enemyTypes.push(1);
@@ -1200,8 +1208,9 @@ const G = ( function () {
 						let shardCollected = false;
 						let shardCarried = false;
 
-						//Check to see if the shard has been carried or collected using the shard array
 
+
+						//Check to see if the shard has been carried or collected using the shard array
 						for(let i = 0; i < shardsCarriedArray.length; i++){
 							let currentShard = shardsCarriedArray[i];
 							if(levelIndexX === currentShard[0] && levelIndexY === currentShard[1]){
@@ -1215,6 +1224,8 @@ const G = ( function () {
 								shardCollected = true;
 							}
 						}
+
+
 
 						//If the shard is neither carried nor collected, set the data to indicate that a shard should spawn there
 						if((!shardCollected && !shardCarried)){
@@ -1257,12 +1268,13 @@ const G = ( function () {
 		}
 
 
-		// Set up actor sprite and place it
-
+		//satisfy unique lastColor conditions
 		if((levelIndexX === 2 && levelIndexY === 2) && _actor_x !== 5){
 			lastColor = 0x766e4c;
+		} else if(levelIndexX === 2 && levelIndexY === 0 && endRoom){
+			lastColor = _DRAW_GRASS;
 		} else if(levelIndexX === 2 && levelIndexY === 0){
-			lastColor = _DRAW_DIRT;
+			lastColor = _DRAW_LIGHT_DIRT;
 		} else if((levelIndexX !== 2 || levelIndexY !== 2)) {
 			lastColor = _DRAW_GRASS;
 		}
@@ -1273,6 +1285,7 @@ const G = ( function () {
 		_actor_place( _actor_x, _actor_y );
 
 		_pathmap = PS.pathMap( _imagemap );
+		isLoading = false;
 	};
 
 	/**
@@ -1287,10 +1300,9 @@ const G = ( function () {
 			return;
 		}
 
-		// init pointer into _imagemap.data array
-		let i = 0;
 		let oplane = PS.gridPlane();
 
+		//Eliminate all yellow traces for safety
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		for ( let y = 0; y < _grid_y; y += 1 ) {
 			for ( let x = 0; x < _grid_x; x += 1 ) {
@@ -1300,24 +1312,28 @@ const G = ( function () {
 				}
 			}
 		}
+
 		PS.gridPlane(oplane);
 
 
+		// init pointer into _imagemap.data array
+		let i = 0;
 
 		//Assign all map data
 		for ( let y = 0; y < _grid_y; y += 1 ) {
 			for ( let x = 0; x < _grid_x; x += 1 ) {
 				let pixel = image.data[i];
 
-				//Check to see if the data is of a shard
-				//If it is, draw a shard regardless of color input
-				//Otherwise, just read in color data as per usual
+				//check for special conditions
 				if(PS.data(x,y) === _MAP_SHARD){
+					//should a shard be placed here?
 					PS.color(x,y,_DRAW_SHARD);
 
 				} else if(pixel === _DRAW_GRASS){
+					//Is it grass?
 					PS.color(x,y,_grass_shade(_rgb_grass));
 				} else if(pixel === _DRAW_ROCK) {
+					//Is it a wall?
 					PS.color(x,y,_shade(_rgb_rock));
 
 				} else {
@@ -1363,12 +1379,18 @@ const G = ( function () {
 							break;
 					}
 				}
-
+				//increment image pointer
 				i += 1;
 			}
 		}
 	}
 
+	/**
+	 * function that randomly shades walls
+	 * @param color
+	 * @returns {*}
+	 * @private
+	 */
 	const _shade = function ( color ) {
 		const range = 10;
 
@@ -1384,6 +1406,12 @@ const G = ( function () {
 		return PS.makeRGB( r, g, b );
 	};
 
+	/**
+	 * function that randomly shades ground
+	 * @param color
+	 * @returns {*}
+	 * @private
+	 */
 	const _grass_shade = function ( color ) {
 		const range = 5;
 
@@ -1439,14 +1467,14 @@ const G = ( function () {
 			// Load the image map in format 1
 
 
-
-
-
-
 			//Load the rat cave
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
+
+			//Initialize grid size
 			PS.gridSize( _grid_x, _grid_y );
+
+
 			//Start game timers
 			_player_timer_id = PS.timerStart(6, _player_clock);
 			_timer_id = PS.timerStart( 6, _clock );
@@ -1459,6 +1487,8 @@ const G = ( function () {
 			//PS.debug("Shards collected: " + shardsCollectedArray);
 
 
+
+			/*
 			for(let i = 0; i < 6; i++){
 				PS.gridPlane(i);
 				PS.debug("Plane " + i + " Color: " + PS.color(x,y));
@@ -1467,6 +1497,7 @@ const G = ( function () {
 			PS.debug("Enemies: " + enemies.length);
 			PS.debug("Detected? " + isDetected)
 
+			 */
 
 		},
 		keyDown : function (key){
@@ -1504,50 +1535,22 @@ const G = ( function () {
 						break;
 					}
 				}
+
 			} else if(isTalking && initDialogueTimer > 5){
+				//Advance dialogue here
 				initDialogueTimer = 0;
 				dialogueMarker += 1;
+
+				//Play rat audio
 				let talkPicker = PS.random(5);
 				PS.audioPlay("RatTalk" + talkPicker, {path: "audio/", volume: 0.3});
+
+				//Reset all dialogue timers
 				for(let i = 0; i < NPCs.length; i++){
 					let NPC = NPCs[i];
 					NPC.dialogueTimer = 0;
 				}
 			}
-		},
-		keyUp : function (key){
-
-			switch ( key ) {
-				case PS.KEY_ARROW_UP:
-				case 119:
-				case 87: {
-					moveUp = false;
-					break;
-				}
-				case PS.KEY_ARROW_DOWN:
-				case 115:
-				case 83: {
-					moveDown = false;
-					break;
-				}
-				case PS.KEY_ARROW_LEFT:
-				case 97:
-				case 65: {
-					moveLeft = false;
-					break;
-				}
-				case PS.KEY_ARROW_RIGHT:
-				case 100:
-				case 68: {
-					moveRight = false;
-					break;
-				}
-			}
-
-			if(!moveUp && !moveDown && !moveLeft && !moveRight){
-				_actor_moving = false;
-			}
-
 		}
 	};
 } () );
@@ -1555,6 +1558,3 @@ const G = ( function () {
 PS.init = G.init;
 PS.touch = G.touch;
 PS.keyDown = G.keyDown;
-//PS.keyUp = G.keyUp;
-
-//code blocks
