@@ -836,7 +836,6 @@ const G = ( function () {
 		PS.gridPlane(_PLANE_ENEMY_SIGHT);
 		if(PS.color(_actor_x, _actor_y) === _DRAW_FOV){
 			if(!isDetected && inRoomTimer > 5){
-				PS.debug("why");
 				isDetected = true;
 			}
 			for(let i=0; i < enemies.length; i++){
