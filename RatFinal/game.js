@@ -70,6 +70,7 @@ const G = ( function () {
 	const _DRAW_ELDER = 0x566078;
 	const _DRAW_NPC = 0x727491;
 	const _DRAW_DIRT = 0x45291c;
+	const _DRAW_LIGHT_DIRT = 0x625b3a;
 	const _DRAW_GRASS = 0x4a652d;
 
 	let _rgb_rock = PS.unmakeRGB(_DRAW_ROCK, {});
@@ -954,7 +955,7 @@ const G = ( function () {
 			statusLine = "Eggplant GET!";
 			collectDialogueTimer = 30;
 			PS.gridPlane(0);
-			lastColor = _DRAW_DIRT;
+			lastColor = _DRAW_LIGHT_DIRT;
 			let oplane = PS.gridPlane();
 			PS.gridPlane(_PLANE_SHARD);
 			PS.alpha(_actor_x,_actor_y, 0);
