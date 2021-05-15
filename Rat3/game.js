@@ -1295,6 +1295,8 @@ const G = ( function () {
 
 			//PS.keyRepeat(PS.DEFAULT, 6, PS.DEFAULT);
 
+			PS.gridSize(gridSizeX, gridSizeY);
+
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
 			_player_timer_id = PS.timerStart(6, _player_clock);
