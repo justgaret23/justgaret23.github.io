@@ -1221,6 +1221,8 @@ const G = ( function () {
 		}
 
 
+
+
 		// Set up actor sprite and place it
 
 		_actor_sprite = PS.spriteSolid( 1, 1 ); // Create 1x1 solid sprite, save its ID
@@ -1255,6 +1257,22 @@ const G = ( function () {
 				i += 1;
 			}
 		}
+
+		let oplane = PS.gridPlane();
+
+		PS.gridPlane(_PLANE_ENEMY_SIGHT);
+
+		for ( let y = 0; y < _grid_y; y += 1 ) {
+			for ( let x = 0; x < _grid_x; x += 1 ) {
+				if(PS.color(x,y) === 0xFFFF00){
+					PS.alpha(x,y,0);
+					PS.color(x,y,_DRAW_GROUND);
+				}
+			}
+		}
+
+		PS.gridPlane(oplane);
+
 	}
 
 	/////////////////////////
@@ -1294,6 +1312,8 @@ const G = ( function () {
 			// Load the image map in format 1
 
 			//PS.keyRepeat(PS.DEFAULT, 6, PS.DEFAULT);
+
+			PS.gridSize(gridSizeX, gridSizeY);
 
 			PS.imageLoad("images/ratmap" + levelIndexX + "-" + levelIndexY + ".gif", onMapLoad, 1 );
 
