@@ -39,11 +39,20 @@
     <main id="MainPage">
         <article>
             <div class="container-sm p-3 my-3 border border-primary rounded">
-                <h1>Project Links:</h1>
-                <a href="https://justgaret23.github.io/IMGD420X/Project1/index.html">Project 1</a><br>
-                <a href="https://justgaret23.github.io/IMGD420X/Project2/index.html">Project 2</a><br>
-                <a href="https://justgaret23.github.io/IMGD420X/Project3/index.html">Project 3</a><br>
-                <a href="https://justgaret23.github.io/IMGD420X/Project4/index.html">Project 4</a>
+                <h3>Assignment 2: WebGL Intro</h3>
+                <a href="https://justgaret23.github.io/IMGD420X/Project2/intro.html">Check out the simulation here!</a><br>
+                <h4>Aesthetic and Technical Intent</h4>
+                    <p>
+                        My aesthetic intent for this assignment was to play around with the bubble simulator effect in the book of shaders and extend it so a user could modify it in interesting ways. 
+                        I wanted to create something with a bubbly, shimmery look that was also somewhat transparent so it could have good synergy with the video background.
+                    </p>
+                    <p>
+                        I was interested in exploring how the bubbles worked on a technical level, since I thought they looked cool and wanted to learn about how they were generated on a more complex level. 
+                        The bubbles were mostly generated using an snoise function provided in the example I pulled from the the book of shaders that I modified in a few ways. 
+                        The snoise function used several glsl parameters, primarily permutation and modulo289 functions. 
+                        Many vec3s were multiplied against each other to and were eventually combined in a dot function call, giving us the dots we have now. 
+                        Modifying how these parameters using multiplicative floats resulted in many interesting effects popping up with the bubbles, making it very fun to play around with technically.
+                    </p>
             </div>
         </article>
     </main>

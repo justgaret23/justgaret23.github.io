@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>IMGD 420X</title>
+<head>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+        }
+    </style>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <link rel="shortcut icon" href="#" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <nav id="TopNav" class="jumbotron text-center">
+        <h1>Garrett Sheehan's IMGD Classwork</h1>
+    </nav>
+
+    <nav id="ClassSelect" class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="https://justgaret23.github.io">Coursework</a>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav">
+                <a class="nav-item nav-link active" href="https://justgaret23.github.io/IMGD2900/index.html">Digital Game Design 1</a>
+                <a class="nav-item nav-link active" href="https://justgaret23.github.io/IMGD420X/index.html">Graphical Simulations of Physical Systems</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="MainPage">
+        <article>
+            <div class="container-sm p-3 my-3 border border-primary rounded">
+                <h3>Assignment 4: Physarum</h3>
+                <a href="https://justgaret23.github.io/IMGD420X/Project4/physarum.html">Check out the simulation here!</a><br>
+                <h4>Preset Descriptions</h4>
+                    <p>
+                        My first control was sensorMultiplier. 
+                        This one was pointed out to us as we started, and modifying it immediately made fun and interesting events happen onscreen.
+                    </p>
+                    <p>
+                        My second control was rotateMultiplier. 
+                        This causes the agents to converge towards the center in an interesting way, allowing for more interesting visual movement possibilities in the simulation.
+
+                    </p>
+                    <p>
+                        My third control was directionDistance. 
+                        This gave the simulated lines a flashy, vibrating effect, increasing the volatility of the simulation. This allowed for more interesting behavior, as I could completely stabilize or destabilize the simulation at a whim and cause split-second interesting reactions to occur.
+
+                    </p>
+                    <p>
+                        My fourth control was offsetMultiplier. 
+                        This had a similar effect to rotateMultiplier (converging agents towards the center) but when combining it with rotateMultiplier, I can freeze certain parts of the simulation which can allow for some interesting interactions.
+                    </p>
+                    <p>
+                        My first preset, and my personal favorite, was burst.
+                        This makes the simulation periodically pulse, making its ends emit agents in a variety of directions. 
+                        It creates a variety of interesting effects, and can vastly differ in execution depending on how the agents are laid across the screen. 
+                        It was very fun to play around with.
+                    </p>
+                    <p>
+                        My second preset was hardRotate. 
+                        This freezes some parts of the simulation in place. 
+                        It also synergizes with burst very well, making a firework-like display across the screen.
+                    </p>
+                    <p>
+                        My third preset was converge. 
+                        This forces all agents to the center far more rapidly than the rotateMultiplier and offsetMultiplier, often resulting in one big blob near the center of the screen. 
+                        It also synergizes well with burst, almost making a nebula-type effect that is very interesting to watch.
+                    </p>
+                    <p>
+                        My final preset was pos.
+                        This changes up the polar coordinates of the simulation, splitting up the agents so that a sharp diagonal line separates two galaxies of agents. 
+                        As with all my other presets, it synergizes very well with burst, creating some interesting explosions.
+                    </p>
+            </div>
+        </article>
+    </main>
+</body>
+</html>

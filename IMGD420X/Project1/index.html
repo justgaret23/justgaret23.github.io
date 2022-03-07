@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>IMGD 420X</title>
+<head>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+        }
+    </style>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <link rel="shortcut icon" href="#" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <nav id="TopNav" class="jumbotron text-center">
+        <h1>Garrett Sheehan's IMGD Classwork</h1>
+    </nav>
+
+    <nav id="ClassSelect" class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="https://justgaret23.github.io">Coursework</a>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav">
+                <a class="nav-item nav-link active" href="https://justgaret23.github.io/IMGD2900/index.html">Digital Game Design 1</a>
+                <a class="nav-item nav-link active" href="https://justgaret23.github.io/IMGD420X/index.html">Graphical Simulations of Physical Systems</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="MainPage">
+        <article>
+            <div class="container-sm p-3 my-3 border border-primary rounded">
+                <h1>Project Links:</h1>
+                <a href="https://justgaret23.github.io/IMGD420X/Project1/index.html">Project 1</a>
+                <a href="https://justgaret23.github.io/IMGD420X/Project2/index.html">Project 2</a>
+                <a href="https://justgaret23.github.io/IMGD420X/Project3/index.html">Project 3</a> 
+                <a href="https://justgaret23.github.io/IMGD420X/Project4/index.html">Project 4</a>
+            </div>
+            <div class="container-sm p-3 my-3 border border-primary rounded">
+                
+
+                <h3>Assignment 1: Shader Live Coding</h3>
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/Lp1HBRtj5IA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> 
+                <h4>Aesthetic and Technical Intent</h4>
+                    <p>
+                        My aesthetic intent for this project was to manipulate red lines in a variety of ways to make a piece both interesting and mildly intense.
+                        One of my loose inspirations was the final fight against Giygas in Earthbound. In this fight, Giygas is in an ethereal state and is represented
+                        by an eerie red pattern of lines repeated across the screen an infinite amount of times. My piece is far less eerie,
+                        but it was on my mind while creating my animations and I tried to ramp up the intensity over time in a loosely similar fashion to how Giygas became more
+                        and more distorted as that fight went on.
+                    </p>
+                    <p>
+                        My technical goals for this project were to explore a lot of The Force's functions and experiment with how they transformed the simple sin wave line animation.
+                        The core of my project revolved around getting the sine, tangent, and cosine of a common function and overlaying them at varying points in the animation.
+                        I then added on other functions to make those animations more interesting such as using smoothstep to make the cosine's cone-like pattern transition smoothly
+                        and distorting the sine using noise. I also inserted a noise-converted vector consisting of the normalalized uv's to further vary the patterns at several points
+                        and add further smoothness using the lastFrame method covered in lecture.
+                    </p>
+                <h4>Feedback (Credit to Geoffrey Garsson for providing feedback)</h4>
+                    <p>
+                        Originally, I was planning on overlaying several colors on top of each other to create a dazzling effect of all three RGB colors. However, upon showing it off 
+                        midway through production to Geoff, he provided interesting feedback in that I should keep to one color and keep the animation constrained enough to the point 
+                        where it's easy on the eyes. I took this feedback into account, removing fast and twitchy animations from my display while trying to keep all of them smooth. 
+                        When I showed it to him again upon completion, he considered it to be an improvement, as I expected. I initially did not expect keeping colors to a minimum to
+                        be such a major part of my final animation, but I am happy to have received that feedback after finishing the project.
+                    </p>
+                <h4>Code</h4>
+                <pre>
+                    float plot(vec2 st){
+                        return smoothstep(0.02, 0.0, abs(st.y));
+                    }
+                    
+                    mat2 rotate2d(float _angle){
+                        return mat2(cos(_angle),-sin(_angle),
+                                    sin(_angle),cos(_angle));
+                    }
+                    
+                    vec2 tile(vec2 _st, float _zoom){
+                        _st *= _zoom;
+                        return fract(_st);
+                    }
+                    
+                    
+                    void main () {
+                    
+                      //uniform floats
+                      
+                      
+                      //Executable code
+                      vec2 p = uv();
+                      vec2 pN = uvN();
+                     
+                      vec2 st = gl_FragCoord.st/time;
+                      
+                      float bottom = step(0., st.y);
+                      //line breaker
+                      float pct = plot(st);
+                      float transition = (sin(time));
+                      
+                      //Tan makes a very erratic effect, could be interesting but unwieldy
+                      //st = rotate2d(0.5 *cos(time)*PI) * st;
+                      
+                      //st = tile(st, 6.);
+                    
+                      vec3 expvec = vec3(pN.x, pN.y, time);
+                      float f = snoise(expvec);
+                      
+                      vec4 lastFrame = texture2D(backbuffer, p);
+                      
+                      float frequency = 0.5;
+                      float sinColor = sin( (0.1) / (0.05 *p.y ) * (0.5 *frequency) + ( time) );
+                      //float sinColor = sin( (0.1 + p.y) / (0.05 *p.x ) * (0.5 *frequency) + ( time) );
+                      //float sinColor = sin( (0.01 + p.y) / (0.05 *p.x * st.y ) * (0.5 *frequency) + ( time) );
+                      //float sinColor = sin( (0.01 + pN.y) / (0.05 *p.x * st.y ) * (0.5 *frequency) + ( 1. *time) );
+                      //float sinColor = sin( (0.01 + pN.y) / (0.05 *p.x * bottom ) * (0.5 *frequency) + ( 1. *time) );
+                      //float sinColor = sin( (0.01 + f) / (0.05 *p.x * bottom ) * (0.5 *frequency) + ( 1. *time) );
+                      //sinColor = noise(sinColor);
+                      float cosColor = cos( (1. - p.y) / (1. *p.x * st.y) * (0.2 *frequency) + (1. + 1.*time) ); 
+                      //float cosColor = cos( (1. - f) / (1. *p.x * st.y) * (0.2 *frequency) + (1. + 1.*time) ); 
+                      //cosColor = smoothstep(0.32, 1., cosColor);
+                      float tanColor = tan( (1. + p.y) / (0.5 * p.x) * (0.02 *frequency) + (1. + time) ); 
+                      
+                      //capturing each frame of video to a texture and sending it back to gpu for the next frame
+                      vec4 feedback = vec4(sinColor, 0., 0., 1.);
+                      //vec4 feedback = vec4(sinColor, 0., 0., 1.) + lastFrame * 0.1;
+                      //vec4 feedback = vec4(sinColor, 0., 0., 1.) + vec4(cosColor, 0., 0., 1.) + lastFrame * 0.1;
+                      //vec4 feedback = vec4(sinColor, 0., 0., 1.) + vec4(cosColor, 0., 0., 1.) + vec4(0.5 *tanColor, 0., 0., 1.) + lastFrame * 0.1;
+                      //Frag Color
+                      
+                      
+                     gl_FragColor = feedback;
+                     //gl_FragColor = vec4(1., 0., 0., 1.);
+                      
+                      
+                      //gl_FragColor = vec4(cosColor, 0., 0., 1.) + vec4(sinColor, 0., 0., 1.);
+                    }
+                    
+                    /*
+                    Script - follow these instructions from the source code to recreate my video
+                    
+                    UC Line 50
+                    C Line 50
+                    UC Line 51
+                    C Line 51
+                    UC Line 52
+                    C Line 52
+                    C Line 53
+                    UC Line 53
+                    UC Line 54
+                    C Line 54
+                    UC Line 53
+                    UC Line 63
+                    C Line 63
+                    UC Line 64
+                    UC Line 57
+                    UC Line 55
+                    UC Line 58
+                    UC Line 41
+                    UC Line 39
+                    C Line 39
+                    UC Line 65
+                    Fade to Red
+                    */
+                </pre>
+            </div>
+        </article>
+    </main>
+</body>
+</html>
